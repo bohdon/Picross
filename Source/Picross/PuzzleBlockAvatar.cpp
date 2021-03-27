@@ -5,7 +5,6 @@
 
 
 APuzzleBlockAvatar::APuzzleBlockAvatar()
-	: Dimensions(FVector(100.f, 100.f, 100.f))
 {
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -17,10 +16,6 @@ APuzzleBlockAvatar::APuzzleBlockAvatar()
 void APuzzleBlockAvatar::SetBlock(const FPuzzleBlock& InBlock)
 {
 	Block = InBlock;
-
-	SetActorRelativeLocation(FVector(Block.Position.X * Dimensions.X,
-	                                 Block.Position.Y * Dimensions.Y,
-	                                 Block.Position.Z * Dimensions.Z));
 	UpdateMesh();
 }
 

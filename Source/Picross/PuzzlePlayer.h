@@ -34,9 +34,38 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<APuzzleGrid> PuzzleGridClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float SmoothInputSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float RotateSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MaxPitchAngle;
+
 	/** Start playing the puzzle */
 	UFUNCTION(BlueprintCallable)
 	void Start();
+
+	/** Return the current puzzle grid */
+	UFUNCTION(BlueprintPure)
+	APuzzleGrid* GetPuzzleGrid() const { return PuzzleGrid; }
+
+	/** Set the current rotation of the puzzle */
+	UFUNCTION(BlueprintCallable)
+	void SetPuzzleRotation(float Pitch, float Yaw);
+
+	/** Add input to rotate the puzzle right or left */
+	UFUNCTION(BlueprintCallable)
+	void AddRotateRightInput(float Value);
+
+	/** Add input to rotate the puzzle up or down */
+	UFUNCTION(BlueprintCallable)
+	void AddRotateUpInput(float Value);
+
+	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 	/** Has the puzzle been started? */
@@ -47,5 +76,18 @@ protected:
 	UPROPERTY(Transient)
 	APuzzleGrid* PuzzleGrid;
 
+	float RotateRightInput;
+	float RotateUpInput;
+
+	float SmoothRotateRightInput;
+	float SmoothRotateUpInput;
+
+	/** The current yaw rotation of the puzzle */
+	float RotateYaw;
+	/** The current pitch rotation of the puzzle */
+	float RotatePitch;
+
 	APuzzleGrid* CreatePuzzleGrid();
+
+	FRotator GetPlayerCameraRotation();
 };

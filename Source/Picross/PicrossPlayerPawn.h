@@ -19,7 +19,7 @@ public:
 	APicrossPlayerPawn();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FVector TraceMaxDistance;
+	float TraceMaxDistance;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float TraceSphereRadius;
@@ -27,6 +27,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TEnumAsByte<ECollisionChannel> TraceChannel;
 
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -36,6 +37,9 @@ public:
 	void SetTypeBetaPressed();
 
 	void SetTypePressed(FGameplayTag Type);
+
+	void RotatePuzzleRight(float Value);
+	void RotatePuzzleUp(float Value);
 
 	/** Return the world position and direction to use for mouse traces */
 	bool GetTracePositionAndDirection(FVector& WorldPosition, FVector& WorldDirection) const;

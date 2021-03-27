@@ -64,6 +64,9 @@ protected:
 
 	APuzzleBlockAvatar* CreateBlockAvatar(const FPuzzleBlock& Block);
 
+	/** Calculate the relative location to use for a block in the grid */
+	FVector CalculateBlockLocation(FIntVector Position) const;
+
 protected:
 	/** All block avatars in this grid. */
 	UPROPERTY(Transient)

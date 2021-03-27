@@ -125,6 +125,7 @@ APuzzleBlockAvatar* APuzzleGrid::CreateBlockAvatar(const FPuzzleBlock& Block)
 	if (BlockAvatar)
 	{
 		BlockAvatar->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+		BlockAvatar->SetActorRelativeLocation(CalculateBlockLocation(Block.Position));
 		BlockAvatar->BlockMeshSet = BlockMeshSet;
 		BlockAvatar->SetBlock(Block);
 
@@ -133,4 +134,12 @@ APuzzleBlockAvatar* APuzzleGrid::CreateBlockAvatar(const FPuzzleBlock& Block)
 	}
 
 	return BlockAvatar;
+}
+
+FVector APuzzleGrid::CalculateBlockLocation(FIntVector Position) const
+{
+	const FVector BlockSize = BlockMeshSet->BlockSize;
+	const FVector CenterOffset = FVector(Puzzle.Dimensions) * BlockSize * 0.5f - BlockSize * 0.5f;
+	const FVector PositionLoc = FVector(Position) * BlockSize;
+	return PositionLoc - CenterOffset;
 }

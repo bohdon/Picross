@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#include "PuzzlePlayer.h"
 #include "GameFramework/GameModeBase.h"
 #include "PicrossGameModeBase.generated.h"
 
@@ -16,4 +18,11 @@ class PICROSS_API APicrossGameModeBase : public AGameModeBase
 
 public:
 	APicrossGameModeBase();
+
+	/** The currently active puzzle player */
+	UPROPERTY(Transient, BlueprintReadOnly)
+	TWeakObjectPtr<APuzzlePlayer> PuzzlePlayer;
+
+	UFUNCTION(BlueprintCallable)
+	APuzzlePlayer* GetPuzzlePlayer() const { return PuzzlePlayer.Get(); }
 };

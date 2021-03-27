@@ -58,10 +58,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FGameplayTag UndiscoveredType;
 
-	/** The dimensions of the block */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FVector Dimensions;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	UPuzzleBlockMeshSet* BlockMeshSet;
 
