@@ -13,5 +13,7 @@ UCLASS()
 class PICROSS_API APicrossGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
+public:
+	APicrossGameModeBase();
 };
