@@ -27,16 +27,20 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TEnumAsByte<ECollisionChannel> TraceChannel;
 
+	/**
+	 * Action input names for each block type that can be identified.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (Categories = "Block.Type"))
+	TMap<FName, FGameplayTag> IdInputBlockTypes;
+
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	void RemoveBlockPressed();
-	void SetTypeAlphaPressed();
-	void SetTypeBetaPressed();
+	DECLARE_DELEGATE_OneParam(FIdInputDelegate, FGameplayTag /* BlockType */);
 
-	void SetTypePressed(FGameplayTag Type);
+	void IdInputPressed(FGameplayTag BlockType);
 
 	void RotatePuzzleRight(float Value);
 	void RotatePuzzleUp(float Value);

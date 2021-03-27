@@ -26,6 +26,6 @@ public:
 	FVector BlockSize;
 
 	/** The block meshes */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Categories = "Block.Type"))
 	TMap<FGameplayTag, UStaticMesh*> Meshes;
 };

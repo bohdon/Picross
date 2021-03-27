@@ -3,6 +3,8 @@
 
 #include "PuzzleBlockAvatar.h"
 
+#include "PicrossGameSettings.h"
+
 
 APuzzleBlockAvatar::APuzzleBlockAvatar()
 {
@@ -27,7 +29,7 @@ void APuzzleBlockAvatar::SetState(EPuzzleBlockAvatarState NewState)
 	if (OldState != State)
 	{
 		// clear marked type
-		if (State != EPuzzleBlockAvatarState::Undiscovered)
+		if (State != EPuzzleBlockAvatarState::Unidentified)
 		{
 			SetMarkedType(FGameplayTag::EmptyTag);
 		}
@@ -39,15 +41,37 @@ void APuzzleBlockAvatar::SetState(EPuzzleBlockAvatarState NewState)
 	}
 }
 
-bool APuzzleBlockAvatar::IsDiscovered() const
+void APuzzleBlockAvatar::SetIsBlockHidden(bool bNewHidden)
 {
-	return State == EPuzzleBlockAvatarState::Discovered ||
+	if (bIsBlockHidden != bNewHidden)
+	{
+		bIsBlockHidden = bNewHidden;
+
+		if (bIsBlockHidden)
+		{
+			OnBlockHidden_BP();
+		}
+		else
+		{
+			OnBlockShown_BP();
+		}
+	}
+}
+
+bool APuzzleBlockAvatar::IsIdentified() const
+{
+	return State == EPuzzleBlockAvatarState::Identified ||
 		State == EPuzzleBlockAvatarState::TrueForm;
 }
 
 bool APuzzleBlockAvatar::IsEmptySpace() const
 {
-	return Block.Type == EmptyType;
+	return Block.Type == GetDefault<UPicrossGameSettings>()->BlockEmptyTag;
+}
+
+bool APuzzleBlockAvatar::IsBlockVisible() const
+{
+	return !bIsBlockHidden && !(IsEmptySpace() && IsIdentified());
 }
 
 void APuzzleBlockAvatar::SetMarkedType(FGameplayTag NewMarkedType)
@@ -66,7 +90,9 @@ void APuzzleBlockAvatar::UpdateMesh()
 {
 	if (BlockMeshSet)
 	{
-		const FGameplayTag StateType = (IsEmptySpace() || !IsDiscovered()) ? UndiscoveredType : Block.Type;
+		const FGameplayTag StateType = (IsEmptySpace() || !IsIdentified())
+			                               ? GetDefault<UPicrossGameSettings>()->BlockUnidentifiedTag
+			                               : Block.Type;
 		UStaticMesh* BlockMesh = BlockMeshSet->Meshes.FindRef(StateType);
 		Mesh->SetStaticMesh(BlockMesh);
 	}

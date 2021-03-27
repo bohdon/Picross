@@ -17,6 +17,7 @@ public class Picross : ModuleRules
 			"Slate",
 			"SlateCore",
 			"GameplayTags",
+			"DeveloperSettings",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

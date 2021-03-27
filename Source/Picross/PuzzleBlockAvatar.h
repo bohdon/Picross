@@ -16,10 +16,10 @@ class UStaticMeshComponent;
 UENUM(BlueprintType)
 enum class EPuzzleBlockAvatarState : uint8
 {
-	/** Default, unsolved, generic block */
-	Undiscovered,
+	/** Default, unidentified, generic block */
+	Unidentified,
 	/** Correctly identified type */
-	Discovered,
+	Identified,
 	/** Revealed, true form of the block */
 	TrueForm,
 };
@@ -32,7 +32,7 @@ UCLASS()
 class PICROSS_API APuzzleBlockAvatar : public AActor
 {
 	GENERATED_BODY()
-	
+
 	/** The mesh representing this block */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	USceneComponent* Root;
@@ -50,14 +50,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetBlock(const FPuzzleBlock& InBlock);
 
-	/** The block type that represents an empty space in the puzzle when discovered */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FGameplayTag EmptyType;
-
-	/** The block type to use when in the Undiscovered state */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FGameplayTag UndiscoveredType;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	UPuzzleBlockMeshSet* BlockMeshSet;
 
@@ -65,25 +57,40 @@ public:
 	UPROPERTY(Transient, BlueprintReadOnly)
 	EPuzzleBlockAvatarState State;
 
-	/** The marked type of the block, if any */
-	UPROPERTY(Transient, BlueprintReadOnly)
-	FGameplayTag MarkedType;
-
 	/** Set the current state of the block */
 	UFUNCTION(BlueprintCallable)
 	void SetState(EPuzzleBlockAvatarState NewState);
 
-	/** Return true if the block is Discovered or in its TrueForm */
+	/** The marked type of the block, if any */
+	UPROPERTY(Transient, BlueprintReadOnly)
+	FGameplayTag MarkedType;
+
+	/** Set the current marked type of the block */
+	UFUNCTION(BlueprintCallable)
+	void SetMarkedType(FGameplayTag NewMarkedType);
+
+	/** Is the block currently hidden temporarily? */
+	UPROPERTY(Transient, BlueprintReadOnly)
+	bool bIsBlockHidden;
+
+	/** Is the block currently hidden temporarily? */
+	UFUNCTION(BlueprintCallable)
+	void SetIsBlockHidden(bool bNewHidden);
+
+	/** Return true if the block is Identified or in its TrueForm */
 	UFUNCTION(BlueprintPure)
-	bool IsDiscovered() const;
+	bool IsIdentified() const;
 
 	/** Return true if the block represents an empty space */
 	UFUNCTION(BlueprintPure)
 	bool IsEmptySpace() const;
 
-	/** Set the current marked type of the block */
-	UFUNCTION(BlueprintCallable)
-	void SetMarkedType(FGameplayTag NewMarkedType);
+	/**
+	 * Is the block currently visible to the player?
+	 * False if an empty space block has been destroyed, or the block is hidden due to slicing.
+	 */
+	UFUNCTION(BlueprintPure)
+	bool IsBlockVisible() const;
 
 	/** Update the mesh to display for the current state */
 	UFUNCTION(BlueprintCallable)
@@ -91,6 +98,12 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent)
 	void NotifyGuessedWrong();
+
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnBlockShown"))
+	void OnBlockShown_BP();
+
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnBlockHidden"))
+	void OnBlockHidden_BP();
 
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnStateChanged"))
 	void OnStateChanged_BP(EPuzzleBlockAvatarState NewState, EPuzzleBlockAvatarState OldState);

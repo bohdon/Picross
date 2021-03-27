@@ -50,47 +50,25 @@ void APicrossPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAction(FName("RemoveBlock"), IE_Pressed, this, &APicrossPlayerPawn::RemoveBlockPressed);
-	PlayerInputComponent->BindAction(FName("SetTypeAlpha"), IE_Pressed, this, &APicrossPlayerPawn::SetTypeAlphaPressed);
-	PlayerInputComponent->BindAction(FName("SetTypeBeta"), IE_Pressed, this, &APicrossPlayerPawn::SetTypeBetaPressed);
+	for (auto& Elem : IdInputBlockTypes)
+	{
+		const FName ActionName = Elem.Key;
+		const FGameplayTag BlockType = Elem.Value;
+		PlayerInputComponent->BindAction<FIdInputDelegate>(ActionName, IE_Pressed,
+		                                                   this, &APicrossPlayerPawn::IdInputPressed, BlockType);
+	}
 	PlayerInputComponent->BindAxis(FName("RotatePuzzleRight"), this, &APicrossPlayerPawn::RotatePuzzleRight);
 	PlayerInputComponent->BindAxis(FName("RotatePuzzleUp"), this, &APicrossPlayerPawn::RotatePuzzleUp);
 }
 
-void APicrossPlayerPawn::RemoveBlockPressed()
+void APicrossPlayerPawn::IdInputPressed(FGameplayTag BlockType)
 {
 	APuzzleBlockAvatar* BlockAvatar = TraceForBlockAvatarUnderMouse();
-	if (BlockAvatar && !BlockAvatar->IsDiscovered())
+	if (BlockAvatar && !BlockAvatar->IsIdentified())
 	{
-		if (BlockAvatar->IsEmptySpace())
+		if (BlockAvatar->Block.Type == BlockType)
 		{
-			BlockAvatar->SetState(EPuzzleBlockAvatarState::Discovered);
-		}
-		else
-		{
-			BlockAvatar->NotifyGuessedWrong();
-		}
-	}
-}
-
-void APicrossPlayerPawn::SetTypeAlphaPressed()
-{
-	SetTypePressed(FGameplayTag::RequestGameplayTag("Block.Type.Alpha"));
-}
-
-void APicrossPlayerPawn::SetTypeBetaPressed()
-{
-	SetTypePressed(FGameplayTag::RequestGameplayTag("Block.Type.Beta"));
-}
-
-void APicrossPlayerPawn::SetTypePressed(FGameplayTag Type)
-{
-	APuzzleBlockAvatar* BlockAvatar = TraceForBlockAvatarUnderMouse();
-	if (BlockAvatar && !BlockAvatar->IsDiscovered())
-	{
-		if (BlockAvatar->Block.Type == Type)
-		{
-			BlockAvatar->SetState(EPuzzleBlockAvatarState::Discovered);
+			BlockAvatar->SetState(EPuzzleBlockAvatarState::Identified);
 		}
 		else
 		{
