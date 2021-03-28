@@ -28,11 +28,15 @@ public:
 	FPuzzle Puzzle;
 
 	UFUNCTION(BlueprintCallable)
-	void SetPuzzle(const FPuzzle& InPuzzle);
+	void SetPuzzle(const FPuzzle& InPuzzle, bool bRegenerateBlocks = true);
 
 	/** The type to use when creating empty blocks */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTag EmptyBlockType;
+	
+	/** If true, generate block avatars for empty blocks */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bGenerateEmptyBlocks;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UPuzzleBlockMeshSet* BlockMeshSet;

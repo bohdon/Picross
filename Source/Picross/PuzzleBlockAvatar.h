@@ -50,8 +50,16 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetBlock(const FPuzzleBlock& InBlock);
 
+	/** Set the annotations to display */
+	UFUNCTION(BlueprintCallable)
+	void SetAnnotations(const FPuzzleBlockAnnotations& InAnnotations);
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	UPuzzleBlockMeshSet* BlockMeshSet;
+
+	/** The currently displayed annotations for this block */
+	UPROPERTY(Transient, BlueprintReadOnly)
+	FPuzzleBlockAnnotations Annotations;
 
 	/** The current display state of the block */
 	UPROPERTY(Transient, BlueprintReadOnly)
@@ -99,6 +107,13 @@ public:
 	UFUNCTION(BlueprintNativeEvent)
 	void NotifyGuessedWrong();
 
+	/** Called when the annotations for this block have changed */
+	void OnAnnotationsChanged();
+
+	/** Return the objects that handle displaying row annotations for an axis of this block */
+	UFUNCTION(BlueprintNativeEvent)
+	TArray<UObject*> GetAnnotationDisplayObjects(int32 Axis) const;
+
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnBlockShown"))
 	void OnBlockShown_BP();
 
@@ -123,6 +138,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FMarkedTypeChangedDynDelegate OnMarkedTypeChangedEvent_BP;
+
+protected:
+	void SetDisplayedAnnotation(UObject* DisplayObject, const FPuzzleRowAnnotation& Annotation) const;
 
 public:
 	FORCEINLINE UStaticMeshComponent* GetMesh() const { return Mesh; }

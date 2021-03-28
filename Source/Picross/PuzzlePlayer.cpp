@@ -3,7 +3,9 @@
 
 #include "PuzzlePlayer.h"
 
+#include "Picross.h"
 #include "PicrossGameModeBase.h"
+#include "PicrossGameSettings.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -38,6 +40,7 @@ void APuzzlePlayer::Start()
 	}
 
 	PuzzleGrid->SetPuzzle(Puzzle);
+	UpdateAllAnnotations();
 
 	bIsStarted = true;
 }
@@ -58,15 +61,112 @@ void APuzzlePlayer::AddRotateUpInput(float Value)
 	RotateUpInput += Value;
 }
 
+void APuzzlePlayer::NotifyBlockIdentified(APuzzleBlockAvatar* BlockAvatar)
+{
+	// TODO(bsayre): Update only changed block annotations
+
+	// update all block annotations
+	UpdateAllAnnotations();
+}
+
+void APuzzlePlayer::UpdateAllAnnotations()
+{
+	RegenerateAllAnnotations();
+	RefreshAllBlockAnnotations();
+}
+
+void APuzzlePlayer::RefreshAllBlockAnnotations()
+{
+	for (int32 X = 0; X < Puzzle.Dimensions.X; ++X)
+	{
+		for (int32 Y = 0; Y < Puzzle.Dimensions.Y; ++Y)
+		{
+			for (int32 Z = 0; Z < Puzzle.Dimensions.Z; ++Z)
+			{
+				FIntVector Position(X, Y, Z);
+				APuzzleBlockAvatar* BlockAvatar = PuzzleGrid->GetBlockAtPosition(Position);
+				if (!BlockAvatar)
+				{
+					UE_LOG(LogPicross, Warning, TEXT("Missing block avatar for position: %s"), *Position.ToString());
+					continue;
+				}
+
+				BlockAvatar->SetAnnotations(GetBlockAnnotations(Position));
+			}
+		}
+	}
+}
+
+void APuzzlePlayer::RegenerateAllAnnotations()
+{
+	XAnnotations.Reset();
+	YAnnotations.Reset();
+	ZAnnotations.Reset();
+
+	// x-axis
+	for (int32 Y = 0; Y < Puzzle.Dimensions.Y; ++Y)
+	{
+		for (int32 Z = 0; Z < Puzzle.Dimensions.Z; ++Z)
+		{
+			const FIntVector StartPosition(0, Y, Z);
+			FPuzzleRowAnnotation XAnnotation = CalculateRowAnnotation(Puzzle, StartPosition, 0);
+			XAnnotations.Add(StartPosition.ToString(), XAnnotation);
+		}
+	}
+
+	// y-axis
+	for (int32 X = 0; X < Puzzle.Dimensions.X; ++X)
+	{
+		for (int32 Z = 0; Z < Puzzle.Dimensions.Z; ++Z)
+		{
+			const FIntVector StartPosition(X, 0, Z);
+			FPuzzleRowAnnotation YAnnotation = CalculateRowAnnotation(Puzzle, StartPosition, 1);
+			YAnnotations.Add(StartPosition.ToString(), YAnnotation);
+		}
+	}
+
+	// z-axis
+	for (int32 X = 0; X < Puzzle.Dimensions.X; ++X)
+	{
+		for (int32 Y = 0; Y < Puzzle.Dimensions.Y; ++Y)
+		{
+			const FIntVector StartPosition(X, Y, 0);
+			FPuzzleRowAnnotation ZAnnotation = CalculateRowAnnotation(Puzzle, StartPosition, 2);
+			ZAnnotations.Add(StartPosition.ToString(), ZAnnotation);
+		}
+	}
+}
+
+FPuzzleBlockAnnotations APuzzlePlayer::GetBlockAnnotations(FIntVector Position) const
+{
+	FPuzzleBlockAnnotations Annotations;
+	Annotations.XAnnotation = GetRowAnnotation(Position, 0);
+	Annotations.YAnnotation = GetRowAnnotation(Position, 1);
+	Annotations.ZAnnotation = GetRowAnnotation(Position, 2);
+	return Annotations;
+}
+
+FPuzzleRowAnnotation APuzzlePlayer::GetRowAnnotation(FIntVector Position, int32 Axis) const
+{
+	FIntVector RowStartPosition = Position;
+	RowStartPosition[Axis] = 0;
+
+	const TMap<FString, FPuzzleRowAnnotation>& Annotations = Axis == 0
+		                                                         ? XAnnotations
+		                                                         : (Axis == 1 ? YAnnotations : ZAnnotations);
+
+	return Annotations.FindRef(RowStartPosition.ToString());
+}
+
 void APuzzlePlayer::BeginPlay()
 {
-	Super::BeginPlay();
-
 	APicrossGameModeBase* GameMode = GetWorld()->GetAuthGameMode<APicrossGameModeBase>();
 	if (GameMode)
 	{
 		GameMode->PuzzlePlayer = this;
 	}
+
+	Super::BeginPlay();
 }
 
 void APuzzlePlayer::Tick(float DeltaSeconds)
@@ -102,6 +202,75 @@ void APuzzlePlayer::Tick(float DeltaSeconds)
 		const FRotator NewRotation = (FQuat(CameraRotation) * FQuat(PitchRot) * FQuat(YawRot)).Rotator();
 		PuzzleGrid->SetActorRotation(NewRotation);
 	}
+}
+
+FPuzzleRowAnnotation APuzzlePlayer::CalculateRowAnnotation(const FPuzzle& InPuzzle, FIntVector Position,
+                                                           int32 Axis) const
+{
+	const FGameplayTag EmptyTag = GetDefault<UPicrossGameSettings>()->BlockEmptyTag;
+
+	FPuzzleRowAnnotation Annotation;
+	TMap<FGameplayTag, FPuzzleRowTypeAnnotation> TypeAnnotations;
+
+	FIntVector CurrentPos = Position;
+
+	// TODO: update blocks that have been identified
+
+	// iterate through this row of blocks along the given axis,
+	// keep track of the last discovered block type to build group counts
+	FGameplayTag LastType;
+	const int32 Dimension = InPuzzle.Dimensions[Axis];
+	for (int32 Idx = 0; Idx < Dimension; ++Idx)
+	{
+		CurrentPos[Axis] = Idx;
+
+		// retrieve block avatars since they currently store state, which is relevant for annotations
+		// TODO: consider storing state in the puzzle so that avatars are only visuals, not data models
+		APuzzleBlockAvatar* BlockAvatar = PuzzleGrid->GetBlockAtPosition(CurrentPos);
+		if (BlockAvatar && BlockAvatar->Block.Type.IsValid() && BlockAvatar->Block.Type != EmptyTag)
+		{
+			if (!TypeAnnotations.Contains(BlockAvatar->Block.Type))
+			{
+				FPuzzleRowTypeAnnotation NewTypeAnnotation;
+				NewTypeAnnotation.Type = BlockAvatar->Block.Type;
+				// assume all are identified, until proven false
+				NewTypeAnnotation.bAreIdentified = true;
+				TypeAnnotations.Add(BlockAvatar->Block.Type, NewTypeAnnotation);
+			}
+
+			FPuzzleRowTypeAnnotation& TypeAnnotation = TypeAnnotations[BlockAvatar->Block.Type];
+
+			// increase number of found blocks
+			++TypeAnnotation.NumBlocks;
+
+			// increment group count if not the first time finding this block
+			if (LastType != BlockAvatar->Block.Type && TypeAnnotation.NumBlocks >= 2)
+			{
+				++TypeAnnotation.NumGroups;
+			}
+
+			// check if identified
+			if (!BlockAvatar->IsIdentified())
+			{
+				TypeAnnotation.bAreIdentified = false;
+			}
+
+			LastType = BlockAvatar->Block.Type;
+		}
+	}
+
+	if (TypeAnnotations.Num() == 0)
+	{
+		// add a 0 annotation
+		FPuzzleRowTypeAnnotation ZeroTypeAnnotation;
+		ZeroTypeAnnotation.Type = EmptyTag;
+		TypeAnnotations.Add(EmptyTag, ZeroTypeAnnotation);
+	}
+
+	// store type annotations on the full annotation
+	TypeAnnotations.GenerateValueArray(Annotation.TypeAnnotations);
+
+	return Annotation;
 }
 
 APuzzleGrid* APuzzlePlayer::CreatePuzzleGrid()

@@ -13,7 +13,7 @@
 /**
  * A set of meshes for each puzzle block type
  */
-UCLASS()
+UCLASS(BlueprintType)
 class PICROSS_API UPuzzleBlockMeshSet : public UDataAsset
 {
 	GENERATED_BODY()
@@ -24,6 +24,10 @@ public:
 	/** The dimensions of a single block */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FVector BlockSize;
+
+	/** The colors associated with each block type */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (Categories = "Block.Type"))
+	TMap<FGameplayTag, FLinearColor> TypeColors;
 
 	/** The block meshes */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Categories = "Block.Type"))

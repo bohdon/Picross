@@ -5,16 +5,21 @@
 
 
 APuzzleGrid::APuzzleGrid()
+	: bGenerateEmptyBlocks(true)
 {
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
 	BlockAvatarClass = APuzzleBlockAvatar::StaticClass();
 }
 
-void APuzzleGrid::SetPuzzle(const FPuzzle& InPuzzle)
+void APuzzleGrid::SetPuzzle(const FPuzzle& InPuzzle, bool bRegenerateBlocks)
 {
 	Puzzle = InPuzzle;
-	RegenerateBlockAvatars();
+
+	if (bRegenerateBlocks)
+	{
+		RegenerateBlockAvatars();
+	}
 }
 
 void APuzzleGrid::OnConstruction(const FTransform& Transform)
@@ -66,19 +71,22 @@ void APuzzleGrid::GenerateBlockAvatars()
 	}
 
 	// generate any empty blocks
-	for (int32 X = 0; X < Puzzle.Dimensions.X; ++X)
+	if (bGenerateEmptyBlocks)
 	{
-		for (int32 Y = 0; Y < Puzzle.Dimensions.Y; ++Y)
+		for (int32 X = 0; X < Puzzle.Dimensions.X; ++X)
 		{
-			for (int32 Z = 0; Z < Puzzle.Dimensions.Z; ++Z)
+			for (int32 Y = 0; Y < Puzzle.Dimensions.Y; ++Y)
 			{
-				const FIntVector Position(X, Y, Z);
-				if (!GetBlockAtPosition(Position))
+				for (int32 Z = 0; Z < Puzzle.Dimensions.Z; ++Z)
 				{
-					FPuzzleBlock EmptyBlock;
-					EmptyBlock.Type = EmptyBlockType;
-					EmptyBlock.Position = Position;
-					CreateBlockAvatar(EmptyBlock);
+					const FIntVector Position(X, Y, Z);
+					if (!GetBlockAtPosition(Position))
+					{
+						FPuzzleBlock EmptyBlock;
+						EmptyBlock.Type = EmptyBlockType;
+						EmptyBlock.Position = Position;
+						CreateBlockAvatar(EmptyBlock);
+					}
 				}
 			}
 		}

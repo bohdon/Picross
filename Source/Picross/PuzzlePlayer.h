@@ -63,6 +63,23 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AddRotateUpInput(float Value);
 
+	/** Called when a block has been identified correctly */
+	void NotifyBlockIdentified(APuzzleBlockAvatar* BlockAvatar);
+
+	/** Regenerate and refresh all displayed block annotations */
+	UFUNCTION(BlueprintCallable)
+	void UpdateAllAnnotations();
+
+	/** Refresh the annotations displayed for all blocks */
+	UFUNCTION(BlueprintCallable)
+    void RefreshAllBlockAnnotations();
+
+	UFUNCTION(BlueprintCallable)
+	FPuzzleBlockAnnotations GetBlockAnnotations(FIntVector Position) const;
+
+	UFUNCTION(BlueprintCallable)
+    FPuzzleRowAnnotation GetRowAnnotation(FIntVector Position, int32 Axis) const;
+
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
@@ -75,6 +92,29 @@ protected:
 	/** The current puzzle grid */
 	UPROPERTY(Transient)
 	APuzzleGrid* PuzzleGrid;
+
+	/** Annotations for every X row, indexed by starting position of the row */
+	UPROPERTY(Transient)
+	TMap<FString, FPuzzleRowAnnotation> XAnnotations;
+
+	/** Annotations for every Y row, indexed by starting position of the row */
+	UPROPERTY(Transient)
+	TMap<FString, FPuzzleRowAnnotation> YAnnotations;
+
+	/** Annotations for every Z row, indexed by starting position of the row */
+	UPROPERTY(Transient)
+	TMap<FString, FPuzzleRowAnnotation> ZAnnotations;
+
+	/** Regenerate all annotations */
+	void RegenerateAllAnnotations();
+
+	/**
+	 * Calculate the annotations for a row in the puzzle
+	 * @param InPuzzle A puzzle used to calculate the annotation
+	 * @param Position The starting block position of the row
+	 * @param Axis The axis of the row, 0, 1, or 2 (X, Y, or Z)
+	 */
+	FPuzzleRowAnnotation CalculateRowAnnotation(const FPuzzle& InPuzzle, FIntVector Position, int32 Axis) const;
 
 	float RotateRightInput;
 	float RotateUpInput;

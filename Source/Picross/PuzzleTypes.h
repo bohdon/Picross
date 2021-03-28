@@ -30,6 +30,8 @@ public:
 	/** The type of block */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTag Type;
+
+	FString ToString() const;
 };
 
 
@@ -54,6 +56,8 @@ public:
 	/** The blocks making up this puzzle */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FPuzzleBlock> Blocks;
+
+	FPuzzleBlock GetBlockAtPosition(FIntVector Position) const;
 };
 
 
@@ -66,6 +70,13 @@ struct PICROSS_API FPuzzleRowTypeAnnotation
 	GENERATED_BODY()
 
 public:
+	FPuzzleRowTypeAnnotation()
+		: NumBlocks(0),
+		  NumGroups(0),
+		  bAreIdentified(false)
+	{
+	}
+
 	/** The type of blocks */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTag Type;
@@ -77,6 +88,10 @@ public:
 	/** The number of connected groups of blocks in this row */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 NumGroups;
+
+	/** Have the blocks for this type been correctly identified? */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bAreIdentified;
 };
 
 
@@ -92,4 +107,28 @@ public:
 	/** The annotations for each type in this row */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FPuzzleRowTypeAnnotation> TypeAnnotations;
+};
+
+
+/**
+ * A full set of annotations to display on a block.
+ * I.e. an annotation for each side of the block.
+ */
+USTRUCT(BlueprintType)
+struct PICROSS_API FPuzzleBlockAnnotations
+{
+	GENERATED_BODY()
+
+public:
+	/** Annotation for the X row of this block */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FPuzzleRowAnnotation XAnnotation;
+
+	/** Annotation for the Y row of this block */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FPuzzleRowAnnotation YAnnotation;
+
+	/** Annotation for the Z row of this block */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FPuzzleRowAnnotation ZAnnotation;
 };

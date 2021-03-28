@@ -3,7 +3,10 @@
 
 #include "PuzzleBlockAvatar.h"
 
+
+#include "Picross.h"
 #include "PicrossGameSettings.h"
+#include "UI/PuzzleRowAnnotationInterface.h"
 
 
 APuzzleBlockAvatar::APuzzleBlockAvatar()
@@ -21,6 +24,13 @@ void APuzzleBlockAvatar::SetBlock(const FPuzzleBlock& InBlock)
 	UpdateMesh();
 }
 
+void APuzzleBlockAvatar::SetAnnotations(const FPuzzleBlockAnnotations& InAnnotations)
+{
+	Annotations = InAnnotations;
+
+	OnAnnotationsChanged();
+}
+
 void APuzzleBlockAvatar::SetState(EPuzzleBlockAvatarState NewState)
 {
 	const EPuzzleBlockAvatarState OldState = State;
@@ -32,6 +42,11 @@ void APuzzleBlockAvatar::SetState(EPuzzleBlockAvatarState NewState)
 		if (State != EPuzzleBlockAvatarState::Unidentified)
 		{
 			SetMarkedType(FGameplayTag::EmptyTag);
+		}
+
+		if (State == EPuzzleBlockAvatarState::Identified)
+		{
+			UE_LOG(LogPicross, Verbose, TEXT("Identified block: %s"), *Block.ToString());
 		}
 
 		UpdateMesh();
@@ -96,6 +111,38 @@ void APuzzleBlockAvatar::UpdateMesh()
 		UStaticMesh* BlockMesh = BlockMeshSet->Meshes.FindRef(StateType);
 		Mesh->SetStaticMesh(BlockMesh);
 	}
+}
+
+void APuzzleBlockAvatar::OnAnnotationsChanged()
+{
+	TArray<UObject*> XAnnotationObjects = GetAnnotationDisplayObjects(0);
+	for (UObject* Object : XAnnotationObjects)
+	{
+		SetDisplayedAnnotation(Object, Annotations.XAnnotation);
+	}
+	TArray<UObject*> YAnnotationObjects = GetAnnotationDisplayObjects(1);
+	for (UObject* Object : YAnnotationObjects)
+	{
+		SetDisplayedAnnotation(Object, Annotations.YAnnotation);
+	}
+	TArray<UObject*> ZAnnotationObjects = GetAnnotationDisplayObjects(2);
+	for (UObject* Object : ZAnnotationObjects)
+	{
+		SetDisplayedAnnotation(Object, Annotations.ZAnnotation);
+	}
+}
+
+void APuzzleBlockAvatar::SetDisplayedAnnotation(UObject* DisplayObject, const FPuzzleRowAnnotation& Annotation) const
+{
+	if (DisplayObject->Implements<UPuzzleRowAnnotationInterface>())
+	{
+		IPuzzleRowAnnotationInterface::Execute_SetPuzzleRowAnnotation(DisplayObject, Annotation);
+	}
+}
+
+TArray<UObject*> APuzzleBlockAvatar::GetAnnotationDisplayObjects_Implementation(int32 Axis) const
+{
+	return TArray<UObject*>();
 }
 
 void APuzzleBlockAvatar::NotifyGuessedWrong_Implementation()
