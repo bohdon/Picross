@@ -3,6 +3,8 @@
 
 #include "PuzzleGrid.h"
 
+#include "PuzzleBlockAvatar.h"
+
 
 APuzzleGrid::APuzzleGrid()
 	: bGenerateEmptyBlocks(true)
@@ -136,6 +138,7 @@ APuzzleBlockAvatar* APuzzleGrid::CreateBlockAvatar(const FPuzzleBlock& Block)
 		BlockAvatar->SetActorRelativeLocation(CalculateBlockLocation(Block.Position));
 		BlockAvatar->BlockMeshSet = BlockMeshSet;
 		BlockAvatar->SetBlock(Block);
+		BlockAvatar->OnStateChangedEvent.AddUObject(this, &APuzzleGrid::OnBlockStateChanged, BlockAvatar);
 
 		BlockAvatars.Add(BlockAvatar);
 		BlocksByPosition.Add(Block.Position.ToString(), BlockAvatar);
@@ -150,4 +153,13 @@ FVector APuzzleGrid::CalculateBlockLocation(FIntVector Position) const
 	const FVector CenterOffset = FVector(Puzzle.Dimensions) * BlockSize * 0.5f - BlockSize * 0.5f;
 	const FVector PositionLoc = FVector(Position) * BlockSize;
 	return PositionLoc - CenterOffset;
+}
+
+void APuzzleGrid::OnBlockStateChanged(EPuzzleBlockState NewState, EPuzzleBlockState OldState,
+                                      APuzzleBlockAvatar* BlockAvatar)
+{
+	if (NewState == EPuzzleBlockState::Identified)
+	{
+		OnBlockIdentifiedEvent.Broadcast(BlockAvatar);
+	}
 }

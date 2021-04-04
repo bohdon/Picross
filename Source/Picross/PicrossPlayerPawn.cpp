@@ -66,14 +66,7 @@ void APicrossPlayerPawn::IdInputPressed(FGameplayTag BlockType)
 	APuzzleBlockAvatar* BlockAvatar = TraceForBlockAvatarUnderMouse();
 	if (BlockAvatar && !BlockAvatar->IsIdentified())
 	{
-		if (BlockAvatar->Block.Type == BlockType)
-		{
-			BlockAvatar->SetState(EPuzzleBlockAvatarState::Identified);
-		}
-		else
-		{
-			BlockAvatar->NotifyGuessedWrong();
-		}
+		BlockAvatar->Identify(BlockType);
 	}
 }
 

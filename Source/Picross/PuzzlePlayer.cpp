@@ -6,6 +6,7 @@
 #include "Picross.h"
 #include "PicrossGameModeBase.h"
 #include "PicrossGameSettings.h"
+#include "PuzzleBlockAvatar.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -61,7 +62,7 @@ void APuzzlePlayer::AddRotateUpInput(float Value)
 	RotateUpInput += Value;
 }
 
-void APuzzlePlayer::NotifyBlockIdentified(APuzzleBlockAvatar* BlockAvatar)
+void APuzzlePlayer::OnBlockIdentified(APuzzleBlockAvatar* BlockAvatar)
 {
 	// TODO(bsayre): Update only changed block annotations
 
@@ -214,8 +215,6 @@ FPuzzleRowAnnotation APuzzlePlayer::CalculateRowAnnotation(const FPuzzle& InPuzz
 
 	FIntVector CurrentPos = Position;
 
-	// TODO: update blocks that have been identified
-
 	// iterate through this row of blocks along the given axis,
 	// keep track of the last discovered block type to build group counts
 	FGameplayTag LastType;
@@ -227,8 +226,14 @@ FPuzzleRowAnnotation APuzzlePlayer::CalculateRowAnnotation(const FPuzzle& InPuzz
 		// retrieve block avatars since they currently store state, which is relevant for annotations
 		// TODO: consider storing state in the puzzle so that avatars are only visuals, not data models
 		APuzzleBlockAvatar* BlockAvatar = PuzzleGrid->GetBlockAtPosition(CurrentPos);
-		if (BlockAvatar && BlockAvatar->Block.Type.IsValid() && BlockAvatar->Block.Type != EmptyTag)
+		if (!BlockAvatar)
 		{
+			continue;
+		}
+
+		if (BlockAvatar->Block.Type != EmptyTag)
+		{
+			// start a new row-type-annotation for this block type
 			if (!TypeAnnotations.Contains(BlockAvatar->Block.Type))
 			{
 				FPuzzleRowTypeAnnotation NewTypeAnnotation;
@@ -243,8 +248,8 @@ FPuzzleRowAnnotation APuzzlePlayer::CalculateRowAnnotation(const FPuzzle& InPuzz
 			// increase number of found blocks
 			++TypeAnnotation.NumBlocks;
 
-			// increment group count if not the first time finding this block
-			if (LastType != BlockAvatar->Block.Type && TypeAnnotation.NumBlocks >= 2)
+			// increment group count if last block type was different
+			if (LastType != BlockAvatar->Block.Type)
 			{
 				++TypeAnnotation.NumGroups;
 			}
@@ -254,9 +259,9 @@ FPuzzleRowAnnotation APuzzlePlayer::CalculateRowAnnotation(const FPuzzle& InPuzz
 			{
 				TypeAnnotation.bAreIdentified = false;
 			}
-
-			LastType = BlockAvatar->Block.Type;
 		}
+
+		LastType = BlockAvatar->Block.Type;
 	}
 
 	if (TypeAnnotations.Num() == 0)
@@ -281,6 +286,10 @@ APuzzleGrid* APuzzlePlayer::CreatePuzzleGrid()
 
 	APuzzleGrid* Grid = GetWorld()->SpawnActor<APuzzleGrid>(PuzzleGridClass, GetActorTransform(),
 	                                                        SpawnParameters);
+	if (Grid)
+	{
+		Grid->OnBlockIdentifiedEvent.AddUObject(this, &APuzzlePlayer::OnBlockIdentified);
+	}
 	return Grid;
 }
 

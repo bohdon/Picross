@@ -13,18 +13,6 @@
 class UStaticMeshComponent;
 
 
-UENUM(BlueprintType)
-enum class EPuzzleBlockAvatarState : uint8
-{
-	/** Default, unidentified, generic block */
-	Unidentified,
-	/** Correctly identified type */
-	Identified,
-	/** Revealed, true form of the block */
-	TrueForm,
-};
-
-
 /**
  * The visual representation of a single puzzle block
  */
@@ -63,11 +51,18 @@ public:
 
 	/** The current display state of the block */
 	UPROPERTY(Transient, BlueprintReadOnly)
-	EPuzzleBlockAvatarState State;
+	EPuzzleBlockState State;
 
 	/** Set the current state of the block */
 	UFUNCTION(BlueprintCallable)
-	void SetState(EPuzzleBlockAvatarState NewState);
+	void SetState(EPuzzleBlockState NewState);
+
+	/**
+	 * Attempt to identify this block. If the type matches this block type it
+	 * will be successfully identified.
+	 */
+	UFUNCTION(BlueprintCallable)
+    void Identify(FGameplayTag GuessType);
 
 	/** The marked type of the block, if any */
 	UPROPERTY(Transient, BlueprintReadOnly)
@@ -104,8 +99,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void UpdateMesh();
 
+	/** Called when this block has been incorrectly identified */
 	UFUNCTION(BlueprintNativeEvent)
-	void NotifyGuessedWrong();
+	void OnIncorrectIdentify(FGameplayTag GuessedType);
 
 	/** Called when the annotations for this block have changed */
 	void OnAnnotationsChanged();
@@ -121,11 +117,18 @@ public:
 	void OnBlockHidden_BP();
 
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnStateChanged"))
-	void OnStateChanged_BP(EPuzzleBlockAvatarState NewState, EPuzzleBlockAvatarState OldState);
+	void OnStateChanged_BP(EPuzzleBlockState NewState, EPuzzleBlockState OldState);
 
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FStateChangedDynDelegate, EPuzzleBlockAvatarState, NewState,
-	                                             EPuzzleBlockAvatarState, OldState);
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FStateChangedDelegate, EPuzzleBlockState /* NewState */,
+	                                     EPuzzleBlockState /* OldState */);
 
+	/** Called when the state of this block has changed */
+	FStateChangedDelegate OnStateChangedEvent;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FStateChangedDynDelegate, EPuzzleBlockState, NewState,
+	                                             EPuzzleBlockState, OldState);
+
+	/** Called when the state of this block has changed */
 	UPROPERTY(BlueprintAssignable)
 	FStateChangedDynDelegate OnStateChangedEvent_BP;
 

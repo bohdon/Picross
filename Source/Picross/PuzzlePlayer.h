@@ -63,22 +63,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AddRotateUpInput(float Value);
 
-	/** Called when a block has been identified correctly */
-	void NotifyBlockIdentified(APuzzleBlockAvatar* BlockAvatar);
-
 	/** Regenerate and refresh all displayed block annotations */
 	UFUNCTION(BlueprintCallable)
 	void UpdateAllAnnotations();
 
 	/** Refresh the annotations displayed for all blocks */
 	UFUNCTION(BlueprintCallable)
-    void RefreshAllBlockAnnotations();
+	void RefreshAllBlockAnnotations();
 
 	UFUNCTION(BlueprintCallable)
 	FPuzzleBlockAnnotations GetBlockAnnotations(FIntVector Position) const;
 
 	UFUNCTION(BlueprintCallable)
-    FPuzzleRowAnnotation GetRowAnnotation(FIntVector Position, int32 Axis) const;
+	FPuzzleRowAnnotation GetRowAnnotation(FIntVector Position, int32 Axis) const;
 
 	virtual void BeginPlay() override;
 
@@ -130,4 +127,7 @@ protected:
 	APuzzleGrid* CreatePuzzleGrid();
 
 	FRotator GetPlayerCameraRotation();
+
+	/** Called when a block has been identified correctly */
+	void OnBlockIdentified(APuzzleBlockAvatar* BlockAvatar);
 };

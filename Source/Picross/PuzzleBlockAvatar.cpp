@@ -31,28 +31,46 @@ void APuzzleBlockAvatar::SetAnnotations(const FPuzzleBlockAnnotations& InAnnotat
 	OnAnnotationsChanged();
 }
 
-void APuzzleBlockAvatar::SetState(EPuzzleBlockAvatarState NewState)
+void APuzzleBlockAvatar::SetState(EPuzzleBlockState NewState)
 {
-	const EPuzzleBlockAvatarState OldState = State;
+	const EPuzzleBlockState OldState = State;
 	State = NewState;
 
 	if (OldState != State)
 	{
 		// clear marked type
-		if (State != EPuzzleBlockAvatarState::Unidentified)
+		if (State != EPuzzleBlockState::Unidentified)
 		{
 			SetMarkedType(FGameplayTag::EmptyTag);
 		}
 
-		if (State == EPuzzleBlockAvatarState::Identified)
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		if (State == EPuzzleBlockState::Identified)
 		{
 			UE_LOG(LogPicross, Verbose, TEXT("Identified block: %s"), *Block.ToString());
 		}
+#endif
 
 		UpdateMesh();
 
 		OnStateChanged_BP(NewState, OldState);
+		OnStateChangedEvent.Broadcast(NewState, OldState);
 		OnStateChangedEvent_BP.Broadcast(NewState, OldState);
+	}
+}
+
+void APuzzleBlockAvatar::Identify(FGameplayTag GuessType)
+{
+	if (GuessType == Block.Type)
+	{
+		if (State == EPuzzleBlockState::Unidentified)
+		{
+			SetState(EPuzzleBlockState::Identified);
+		}
+	}
+	else
+	{
+		OnIncorrectIdentify(GuessType);
 	}
 }
 
@@ -75,8 +93,8 @@ void APuzzleBlockAvatar::SetIsBlockHidden(bool bNewHidden)
 
 bool APuzzleBlockAvatar::IsIdentified() const
 {
-	return State == EPuzzleBlockAvatarState::Identified ||
-		State == EPuzzleBlockAvatarState::TrueForm;
+	return State == EPuzzleBlockState::Identified ||
+		State == EPuzzleBlockState::TrueForm;
 }
 
 bool APuzzleBlockAvatar::IsEmptySpace() const
@@ -145,6 +163,6 @@ TArray<UObject*> APuzzleBlockAvatar::GetAnnotationDisplayObjects_Implementation(
 	return TArray<UObject*>();
 }
 
-void APuzzleBlockAvatar::NotifyGuessedWrong_Implementation()
+void APuzzleBlockAvatar::OnIncorrectIdentify_Implementation(FGameplayTag GuessedType)
 {
 }

@@ -4,11 +4,14 @@
 
 #include "CoreMinimal.h"
 
-#include "PuzzleBlockAvatar.h"
 #include "PuzzleTypes.h"
 #include "GameFramework/Actor.h"
 
 #include "PuzzleGrid.generated.h"
+
+class APuzzleBlockAvatar;
+class UPuzzleBlockMeshSet;
+
 
 /**
  * The visual representation of a grid of blocks making up a puzzle
@@ -33,7 +36,7 @@ public:
 	/** The type to use when creating empty blocks */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTag EmptyBlockType;
-	
+
 	/** If true, generate block avatars for empty blocks */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bGenerateEmptyBlocks;
@@ -57,6 +60,11 @@ public:
 	UFUNCTION(BlueprintPure)
 	APuzzleBlockAvatar* GetBlockAtPosition(const FIntVector& Position) const;
 
+	DECLARE_MULTICAST_DELEGATE_OneParam(FBlockIdentifiedDelegate, APuzzleBlockAvatar* /* BlockAvatar */);
+
+	/** Called when a block in this grid has ben identified */
+	FBlockIdentifiedDelegate OnBlockIdentifiedEvent;
+
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
@@ -70,6 +78,9 @@ protected:
 
 	/** Calculate the relative location to use for a block in the grid */
 	FVector CalculateBlockLocation(FIntVector Position) const;
+
+	void OnBlockStateChanged(EPuzzleBlockState NewState, EPuzzleBlockState OldState,
+	                         APuzzleBlockAvatar* BlockAvatar);
 
 protected:
 	/** All block avatars in this grid. */

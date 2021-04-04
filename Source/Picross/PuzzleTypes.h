@@ -10,6 +10,21 @@
 
 
 /**
+ * The possible states of a puzzle block during puzzle play
+ */
+UENUM(BlueprintType)
+enum class EPuzzleBlockState : uint8
+{
+	/** Default, unidentified, generic block */
+	Unidentified,
+	/** Correctly identified type */
+	Identified,
+	/** Revealed, true form of the block */
+	TrueForm,
+};
+
+
+/**
  * A single block within a FPuzzle
  */
 USTRUCT(BlueprintType)
