@@ -33,14 +33,18 @@ public:
 	APuzzleBlockAvatar();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FPuzzleBlock Block;
+	FPuzzleBlockDef Block;
 
 	UFUNCTION(BlueprintCallable)
-	void SetBlock(const FPuzzleBlock& InBlock);
+	void SetBlock(const FPuzzleBlockDef& InBlock);
 
 	/** Set the annotations to display */
 	UFUNCTION(BlueprintCallable)
 	void SetAnnotations(const FPuzzleBlockAnnotations& InAnnotations);
+
+	/** Set whether any annotations on this block should be visible */
+	UFUNCTION(BlueprintNativeEvent)
+    void SetAnnotationsVisible(bool bNewVisible);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	UPuzzleBlockMeshSet* BlockMeshSet;
@@ -62,7 +66,7 @@ public:
 	 * will be successfully identified.
 	 */
 	UFUNCTION(BlueprintCallable)
-    void Identify(FGameplayTag GuessType);
+	void Identify(FGameplayTag GuessType);
 
 	/** The marked type of the block, if any */
 	UPROPERTY(Transient, BlueprintReadOnly)
@@ -106,6 +110,10 @@ public:
 	/** Called when the annotations for this block have changed */
 	void OnAnnotationsChanged();
 
+	/** Called when the annotations for this block have changed */
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnAnnotationsChanged"))
+	void OnAnnotationsChanged_BP();
+
 	/** Return the objects that handle displaying row annotations for an axis of this block */
 	UFUNCTION(BlueprintNativeEvent)
 	TArray<UObject*> GetAnnotationDisplayObjects(int32 Axis) const;
@@ -143,7 +151,7 @@ public:
 	FMarkedTypeChangedDynDelegate OnMarkedTypeChangedEvent_BP;
 
 protected:
-	void SetDisplayedAnnotation(UObject* DisplayObject, const FPuzzleRowAnnotation& Annotation) const;
+	void SetDisplayedAnnotation(UObject* DisplayObject, const FPuzzleRowAnnotations& Annotation) const;
 
 public:
 	FORCEINLINE UStaticMeshComponent* GetMesh() const { return Mesh; }

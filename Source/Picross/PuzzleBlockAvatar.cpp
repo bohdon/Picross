@@ -18,7 +18,7 @@ APuzzleBlockAvatar::APuzzleBlockAvatar()
 	Mesh->SetupAttachment(RootComponent);
 }
 
-void APuzzleBlockAvatar::SetBlock(const FPuzzleBlock& InBlock)
+void APuzzleBlockAvatar::SetBlock(const FPuzzleBlockDef& InBlock)
 {
 	Block = InBlock;
 	UpdateMesh();
@@ -29,6 +29,34 @@ void APuzzleBlockAvatar::SetAnnotations(const FPuzzleBlockAnnotations& InAnnotat
 	Annotations = InAnnotations;
 
 	OnAnnotationsChanged();
+}
+
+void APuzzleBlockAvatar::SetAnnotationsVisible_Implementation(bool bNewVisible)
+{
+	TArray<UObject*> XAnnotationObjects = GetAnnotationDisplayObjects(0);
+	for (UObject* Object : XAnnotationObjects)
+	{
+		if (Object->Implements<UPuzzleRowAnnotationInterface>())
+		{
+			IPuzzleRowAnnotationInterface::Execute_SetAnnotationsVisible(Object, bNewVisible);
+		}
+	}
+	TArray<UObject*> YAnnotationObjects = GetAnnotationDisplayObjects(1);
+	for (UObject* Object : YAnnotationObjects)
+	{
+		if (Object->Implements<UPuzzleRowAnnotationInterface>())
+		{
+			IPuzzleRowAnnotationInterface::Execute_SetAnnotationsVisible(Object, bNewVisible);
+		}
+	}
+	TArray<UObject*> ZAnnotationObjects = GetAnnotationDisplayObjects(2);
+	for (UObject* Object : ZAnnotationObjects)
+	{
+		if (Object->Implements<UPuzzleRowAnnotationInterface>())
+		{
+			IPuzzleRowAnnotationInterface::Execute_SetAnnotationsVisible(Object, bNewVisible);
+		}
+	}
 }
 
 void APuzzleBlockAvatar::SetState(EPuzzleBlockState NewState)
@@ -136,25 +164,27 @@ void APuzzleBlockAvatar::OnAnnotationsChanged()
 	TArray<UObject*> XAnnotationObjects = GetAnnotationDisplayObjects(0);
 	for (UObject* Object : XAnnotationObjects)
 	{
-		SetDisplayedAnnotation(Object, Annotations.XAnnotation);
+		SetDisplayedAnnotation(Object, Annotations.XAnnotations);
 	}
 	TArray<UObject*> YAnnotationObjects = GetAnnotationDisplayObjects(1);
 	for (UObject* Object : YAnnotationObjects)
 	{
-		SetDisplayedAnnotation(Object, Annotations.YAnnotation);
+		SetDisplayedAnnotation(Object, Annotations.YAnnotations);
 	}
 	TArray<UObject*> ZAnnotationObjects = GetAnnotationDisplayObjects(2);
 	for (UObject* Object : ZAnnotationObjects)
 	{
-		SetDisplayedAnnotation(Object, Annotations.ZAnnotation);
+		SetDisplayedAnnotation(Object, Annotations.ZAnnotations);
 	}
+
+	OnAnnotationsChanged_BP();
 }
 
-void APuzzleBlockAvatar::SetDisplayedAnnotation(UObject* DisplayObject, const FPuzzleRowAnnotation& Annotation) const
+void APuzzleBlockAvatar::SetDisplayedAnnotation(UObject* DisplayObject, const FPuzzleRowAnnotations& Annotation) const
 {
 	if (DisplayObject->Implements<UPuzzleRowAnnotationInterface>())
 	{
-		IPuzzleRowAnnotationInterface::Execute_SetPuzzleRowAnnotation(DisplayObject, Annotation);
+		IPuzzleRowAnnotationInterface::Execute_SetPuzzleRowAnnotations(DisplayObject, Annotation);
 	}
 }
 

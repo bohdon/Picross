@@ -26,9 +26,9 @@ class PICROSS_API APuzzlePlayer : public AActor
 public:
 	APuzzlePlayer();
 
-	/** The puzzle to be played */
+	/** The puzzle to be solved */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FPuzzle Puzzle;
+	FPuzzleDef PuzzleDef;
 
 	/** The puzzle grid class to use */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -63,55 +63,72 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AddRotateUpInput(float Value);
 
-	/** Regenerate and refresh all displayed block annotations */
+	/** Automatically identify all empty blocks on rows with visible 0 annotations */
 	UFUNCTION(BlueprintCallable)
-	void UpdateAllAnnotations();
+	void BreakZeroRows();
+
+	/** Automatically identify all blocks for a row */
+	UFUNCTION(BlueprintCallable)
+	void AutoIdentifyBlocksInRow(FPuzzleRow Row);
 
 	/** Refresh the annotations displayed for all blocks */
 	UFUNCTION(BlueprintCallable)
 	void RefreshAllBlockAnnotations();
 
+	/** Return true if all blocks in a row have been identified */
+	UFUNCTION(BlueprintCallable, BlueprintPure = false)
+	bool IsRowIdentified(FPuzzleRow Row) const;
+
+	/** Return true if all blocks of a single type has been identified in a row */
+	UFUNCTION(BlueprintCallable, BlueprintPure = false)
+	bool IsRowTypeIdentified(FPuzzleRow Row, FGameplayTag BlockType) const;
+
+	/**
+	 * Get all annotations for a block.
+	 * Updates the row type annotations to include whether each type is identified for that row
+	 */
 	UFUNCTION(BlueprintCallable)
 	FPuzzleBlockAnnotations GetBlockAnnotations(FIntVector Position) const;
 
 	UFUNCTION(BlueprintCallable)
-	FPuzzleRowAnnotation GetRowAnnotation(FIntVector Position, int32 Axis) const;
+	FPuzzleRowAnnotations GetRowAnnotation(FPuzzleRow Row) const;
 
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
+
+	/**
+	 * Called when the true form of all blocks in a row has been revealed.
+	 * Not called for empty rows.
+	 */
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnRowRevealed"))
+	void OnRowRevealed_BP(FPuzzleRow Row);
+
+	/**
+	 * Called when the puzzle has been fully solved
+	 */
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnPuzzleSolved"))
+	void OnPuzzleSolved_BP();
 
 protected:
 	/** Has the puzzle been started? */
 	UPROPERTY(Transient)
 	bool bIsStarted;
 
+	/** Has the puzzle been solved? */
+	UPROPERTY(Transient)
+	bool bIsSolved;
+
 	/** The current puzzle grid */
 	UPROPERTY(Transient)
 	APuzzleGrid* PuzzleGrid;
 
-	/** Annotations for every X row, indexed by starting position of the row */
+	/** All annotations for the puzzle */
 	UPROPERTY(Transient)
-	TMap<FString, FPuzzleRowAnnotation> XAnnotations;
-
-	/** Annotations for every Y row, indexed by starting position of the row */
-	UPROPERTY(Transient)
-	TMap<FString, FPuzzleRowAnnotation> YAnnotations;
-
-	/** Annotations for every Z row, indexed by starting position of the row */
-	UPROPERTY(Transient)
-	TMap<FString, FPuzzleRowAnnotation> ZAnnotations;
+	FPuzzleAnnotations Annotations;
 
 	/** Regenerate all annotations */
 	void RegenerateAllAnnotations();
-
-	/**
-	 * Calculate the annotations for a row in the puzzle
-	 * @param InPuzzle A puzzle used to calculate the annotation
-	 * @param Position The starting block position of the row
-	 * @param Axis The axis of the row, 0, 1, or 2 (X, Y, or Z)
-	 */
-	FPuzzleRowAnnotation CalculateRowAnnotation(const FPuzzle& InPuzzle, FIntVector Position, int32 Axis) const;
 
 	float RotateRightInput;
 	float RotateUpInput;
@@ -126,8 +143,21 @@ protected:
 
 	APuzzleGrid* CreatePuzzleGrid();
 
+	void SetAllBlockAnnotationsVisible(bool bNewVisible);
+
 	FRotator GetPlayerCameraRotation();
+
+	/** Check if the puzzle has been solved */
+	void CheckPuzzleSolved();
+
+	/**
+	 * Check if a row has been solved, and reveal the true form of blocks if so
+	 */
+	void CheckRowSolved(FPuzzleRow Row);
 
 	/** Called when a block has been identified correctly */
 	void OnBlockIdentified(APuzzleBlockAvatar* BlockAvatar);
+
+	/** Called when all blocks in a row have been identified */
+	void OnRowIdentified(FPuzzleRow Row);
 };

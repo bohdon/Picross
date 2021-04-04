@@ -14,7 +14,7 @@ APuzzleGrid::APuzzleGrid()
 	BlockAvatarClass = APuzzleBlockAvatar::StaticClass();
 }
 
-void APuzzleGrid::SetPuzzle(const FPuzzle& InPuzzle, bool bRegenerateBlocks)
+void APuzzleGrid::SetPuzzle(const FPuzzleDef& InPuzzle, bool bRegenerateBlocks)
 {
 	Puzzle = InPuzzle;
 
@@ -67,7 +67,7 @@ void APuzzleGrid::GenerateBlockAvatars()
 	BlocksByPosition.Reset();
 
 	// generate all real blocks from the puzzle
-	for (const FPuzzleBlock& Block : Puzzle.Blocks)
+	for (const FPuzzleBlockDef& Block : Puzzle.Blocks)
 	{
 		CreateBlockAvatar(Block);
 	}
@@ -84,7 +84,7 @@ void APuzzleGrid::GenerateBlockAvatars()
 					const FIntVector Position(X, Y, Z);
 					if (!GetBlockAtPosition(Position))
 					{
-						FPuzzleBlock EmptyBlock;
+						FPuzzleBlockDef EmptyBlock;
 						EmptyBlock.Type = EmptyBlockType;
 						EmptyBlock.Position = Position;
 						CreateBlockAvatar(EmptyBlock);
@@ -124,7 +124,7 @@ APuzzleBlockAvatar* APuzzleGrid::GetBlockAtPosition(const FIntVector& Position) 
 	return nullptr;
 }
 
-APuzzleBlockAvatar* APuzzleGrid::CreateBlockAvatar(const FPuzzleBlock& Block)
+APuzzleBlockAvatar* APuzzleGrid::CreateBlockAvatar(const FPuzzleBlockDef& Block)
 {
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.Owner = this;

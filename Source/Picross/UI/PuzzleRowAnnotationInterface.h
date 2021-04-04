@@ -27,7 +27,13 @@ class PICROSS_API IPuzzleRowAnnotationInterface
 	GENERATED_BODY()
 
 public:
+	/** Set whether the annotation should be visible */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void SetPuzzleRowAnnotation(FPuzzleRowAnnotation InAnnotation);
-	virtual void SetPuzzleRowAnnotation_Implementation(FPuzzleRowAnnotation InAnnotation) = 0;
+	void SetAnnotationsVisible(bool bNewVisible);
+	virtual void SetAnnotationsVisible_Implementation(bool bNewVisible) = 0;
+
+	/** Set the annotations to display for this row */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void SetPuzzleRowAnnotations(FPuzzleRowAnnotations InAnnotations);
+	virtual void SetPuzzleRowAnnotations_Implementation(FPuzzleRowAnnotations InAnnotations) = 0;
 };

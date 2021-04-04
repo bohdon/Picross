@@ -40,8 +40,9 @@ void APuzzlePlayer::Start()
 		}
 	}
 
-	PuzzleGrid->SetPuzzle(Puzzle);
-	UpdateAllAnnotations();
+	PuzzleGrid->SetPuzzle(PuzzleDef);
+	RegenerateAllAnnotations();
+	RefreshAllBlockAnnotations();
 
 	bIsStarted = true;
 }
@@ -62,27 +63,65 @@ void APuzzlePlayer::AddRotateUpInput(float Value)
 	RotateUpInput += Value;
 }
 
-void APuzzlePlayer::OnBlockIdentified(APuzzleBlockAvatar* BlockAvatar)
+void APuzzlePlayer::BreakZeroRows()
 {
-	// TODO(bsayre): Update only changed block annotations
+	for (int32 X = 0; X < PuzzleDef.Dimensions.X; ++X)
+	{
+		for (int32 Y = 0; Y < PuzzleDef.Dimensions.Y; ++Y)
+		{
+			for (int32 Z = 0; Z < PuzzleDef.Dimensions.Z; ++Z)
+			{
+				const FIntVector Position(X, Y, Z);
+				FPuzzleRowAnnotations RowAnnotations;
 
-	// update all block annotations
-	UpdateAllAnnotations();
+				Annotations.GetRowAnnotations(FPuzzleRow(Position, 0), RowAnnotations);
+				if (RowAnnotations.bIsVisible && RowAnnotations.IsZeroAnnotation())
+				{
+					AutoIdentifyBlocksInRow(FPuzzleRow(Position, 0));
+				}
+
+				Annotations.GetRowAnnotations(FPuzzleRow(Position, 1), RowAnnotations);
+				if (RowAnnotations.bIsVisible && RowAnnotations.IsZeroAnnotation())
+				{
+					AutoIdentifyBlocksInRow(FPuzzleRow(Position, 1));
+				}
+
+				Annotations.GetRowAnnotations(FPuzzleRow(Position, 2), RowAnnotations);
+				if (RowAnnotations.bIsVisible && RowAnnotations.IsZeroAnnotation())
+				{
+					AutoIdentifyBlocksInRow(FPuzzleRow(Position, 2));
+				}
+			}
+		}
+	}
 }
 
-void APuzzlePlayer::UpdateAllAnnotations()
+void APuzzlePlayer::AutoIdentifyBlocksInRow(FPuzzleRow Row)
 {
-	RegenerateAllAnnotations();
-	RefreshAllBlockAnnotations();
+	FIntVector CurrentPos = Row.Position;
+	if (PuzzleGrid && Row.IsValid())
+	{
+		for (int32 Idx = 0; Idx < PuzzleDef.Dimensions[Row.Axis]; ++Idx)
+		{
+			CurrentPos[Row.Axis] = Idx;
+
+			// TODO: flip this relationship, identify the puzzle via the player, then notify the block avatar
+			APuzzleBlockAvatar* BlockAvatar = PuzzleGrid->GetBlockAtPosition(CurrentPos);
+			if (BlockAvatar)
+			{
+				BlockAvatar->Identify(BlockAvatar->Block.Type);
+			}
+		}
+	}
 }
 
 void APuzzlePlayer::RefreshAllBlockAnnotations()
 {
-	for (int32 X = 0; X < Puzzle.Dimensions.X; ++X)
+	for (int32 X = 0; X < PuzzleDef.Dimensions.X; ++X)
 	{
-		for (int32 Y = 0; Y < Puzzle.Dimensions.Y; ++Y)
+		for (int32 Y = 0; Y < PuzzleDef.Dimensions.Y; ++Y)
 		{
-			for (int32 Z = 0; Z < Puzzle.Dimensions.Z; ++Z)
+			for (int32 Z = 0; Z < PuzzleDef.Dimensions.Z; ++Z)
 			{
 				FIntVector Position(X, Y, Z);
 				APuzzleBlockAvatar* BlockAvatar = PuzzleGrid->GetBlockAtPosition(Position);
@@ -98,65 +137,82 @@ void APuzzlePlayer::RefreshAllBlockAnnotations()
 	}
 }
 
+bool APuzzlePlayer::IsRowIdentified(FPuzzleRow Row) const
+{
+	Row.Normalize();
+	if (Row.IsValid() && PuzzleGrid)
+	{
+		FIntVector Pos = Row.Position;
+		for (int32 Idx = 0; Idx < PuzzleDef.Dimensions[Row.Axis]; ++Idx)
+		{
+			Pos[Row.Axis] = Idx;
+
+			// TODO(bsayre): Use FPuzzleBlock instead of block avatars
+			APuzzleBlockAvatar* BlockAvatar = PuzzleGrid->GetBlockAtPosition(Pos);
+			if (BlockAvatar && !BlockAvatar->IsIdentified())
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
+bool APuzzlePlayer::IsRowTypeIdentified(FPuzzleRow Row, FGameplayTag BlockType) const
+{
+	Row.Normalize();
+	if (Row.IsValid() && PuzzleGrid)
+	{
+		FIntVector Pos = Row.Position;
+		for (int32 Idx = 0; Idx < PuzzleDef.Dimensions[Row.Axis]; ++Idx)
+		{
+			Pos[Row.Axis] = Idx;
+
+			// TODO(bsayre): Use FPuzzleBlock instead of block avatars
+			APuzzleBlockAvatar* BlockAvatar = PuzzleGrid->GetBlockAtPosition(Pos);
+			if (BlockAvatar && BlockAvatar->Block.Type == BlockType && !BlockAvatar->IsIdentified())
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
 void APuzzlePlayer::RegenerateAllAnnotations()
 {
-	XAnnotations.Reset();
-	YAnnotations.Reset();
-	ZAnnotations.Reset();
-
-	// x-axis
-	for (int32 Y = 0; Y < Puzzle.Dimensions.Y; ++Y)
-	{
-		for (int32 Z = 0; Z < Puzzle.Dimensions.Z; ++Z)
-		{
-			const FIntVector StartPosition(0, Y, Z);
-			FPuzzleRowAnnotation XAnnotation = CalculateRowAnnotation(Puzzle, StartPosition, 0);
-			XAnnotations.Add(StartPosition.ToString(), XAnnotation);
-		}
-	}
-
-	// y-axis
-	for (int32 X = 0; X < Puzzle.Dimensions.X; ++X)
-	{
-		for (int32 Z = 0; Z < Puzzle.Dimensions.Z; ++Z)
-		{
-			const FIntVector StartPosition(X, 0, Z);
-			FPuzzleRowAnnotation YAnnotation = CalculateRowAnnotation(Puzzle, StartPosition, 1);
-			YAnnotations.Add(StartPosition.ToString(), YAnnotation);
-		}
-	}
-
-	// z-axis
-	for (int32 X = 0; X < Puzzle.Dimensions.X; ++X)
-	{
-		for (int32 Y = 0; Y < Puzzle.Dimensions.Y; ++Y)
-		{
-			const FIntVector StartPosition(X, Y, 0);
-			FPuzzleRowAnnotation ZAnnotation = CalculateRowAnnotation(Puzzle, StartPosition, 2);
-			ZAnnotations.Add(StartPosition.ToString(), ZAnnotation);
-		}
-	}
+	FPuzzleAnnotations::GenerateAnnotations(PuzzleDef, Annotations);
 }
 
 FPuzzleBlockAnnotations APuzzlePlayer::GetBlockAnnotations(FIntVector Position) const
 {
-	FPuzzleBlockAnnotations Annotations;
-	Annotations.XAnnotation = GetRowAnnotation(Position, 0);
-	Annotations.YAnnotation = GetRowAnnotation(Position, 1);
-	Annotations.ZAnnotation = GetRowAnnotation(Position, 2);
-	return Annotations;
+	FPuzzleBlockAnnotations Result;
+	Annotations.GetBlockAnnotations(Position, Result);
+
+	// get identified state for each type row
+	for (FPuzzleRowTypeAnnotation& RowTypeAnnotations : Result.XAnnotations.TypeAnnotations)
+	{
+		RowTypeAnnotations.bAreIdentified = IsRowTypeIdentified(FPuzzleRow(Position, 0), RowTypeAnnotations.Type);
+	}
+	for (FPuzzleRowTypeAnnotation& RowTypeAnnotations : Result.YAnnotations.TypeAnnotations)
+	{
+		RowTypeAnnotations.bAreIdentified = IsRowTypeIdentified(FPuzzleRow(Position, 1), RowTypeAnnotations.Type);
+	}
+	for (FPuzzleRowTypeAnnotation& RowTypeAnnotations : Result.ZAnnotations.TypeAnnotations)
+	{
+		RowTypeAnnotations.bAreIdentified = IsRowTypeIdentified(FPuzzleRow(Position, 2), RowTypeAnnotations.Type);
+	}
+
+	return Result;
 }
 
-FPuzzleRowAnnotation APuzzlePlayer::GetRowAnnotation(FIntVector Position, int32 Axis) const
+FPuzzleRowAnnotations APuzzlePlayer::GetRowAnnotation(FPuzzleRow Row) const
 {
-	FIntVector RowStartPosition = Position;
-	RowStartPosition[Axis] = 0;
-
-	const TMap<FString, FPuzzleRowAnnotation>& Annotations = Axis == 0
-		                                                         ? XAnnotations
-		                                                         : (Axis == 1 ? YAnnotations : ZAnnotations);
-
-	return Annotations.FindRef(RowStartPosition.ToString());
+	FPuzzleRowAnnotations Result;
+	Annotations.GetRowAnnotations(Row, Result);
+	return Result;
 }
 
 void APuzzlePlayer::BeginPlay()
@@ -205,79 +261,6 @@ void APuzzlePlayer::Tick(float DeltaSeconds)
 	}
 }
 
-FPuzzleRowAnnotation APuzzlePlayer::CalculateRowAnnotation(const FPuzzle& InPuzzle, FIntVector Position,
-                                                           int32 Axis) const
-{
-	const FGameplayTag EmptyTag = GetDefault<UPicrossGameSettings>()->BlockEmptyTag;
-
-	FPuzzleRowAnnotation Annotation;
-	TMap<FGameplayTag, FPuzzleRowTypeAnnotation> TypeAnnotations;
-
-	FIntVector CurrentPos = Position;
-
-	// iterate through this row of blocks along the given axis,
-	// keep track of the last discovered block type to build group counts
-	FGameplayTag LastType;
-	const int32 Dimension = InPuzzle.Dimensions[Axis];
-	for (int32 Idx = 0; Idx < Dimension; ++Idx)
-	{
-		CurrentPos[Axis] = Idx;
-
-		// retrieve block avatars since they currently store state, which is relevant for annotations
-		// TODO: consider storing state in the puzzle so that avatars are only visuals, not data models
-		APuzzleBlockAvatar* BlockAvatar = PuzzleGrid->GetBlockAtPosition(CurrentPos);
-		if (!BlockAvatar)
-		{
-			continue;
-		}
-
-		if (BlockAvatar->Block.Type != EmptyTag)
-		{
-			// start a new row-type-annotation for this block type
-			if (!TypeAnnotations.Contains(BlockAvatar->Block.Type))
-			{
-				FPuzzleRowTypeAnnotation NewTypeAnnotation;
-				NewTypeAnnotation.Type = BlockAvatar->Block.Type;
-				// assume all are identified, until proven false
-				NewTypeAnnotation.bAreIdentified = true;
-				TypeAnnotations.Add(BlockAvatar->Block.Type, NewTypeAnnotation);
-			}
-
-			FPuzzleRowTypeAnnotation& TypeAnnotation = TypeAnnotations[BlockAvatar->Block.Type];
-
-			// increase number of found blocks
-			++TypeAnnotation.NumBlocks;
-
-			// increment group count if last block type was different
-			if (LastType != BlockAvatar->Block.Type)
-			{
-				++TypeAnnotation.NumGroups;
-			}
-
-			// check if identified
-			if (!BlockAvatar->IsIdentified())
-			{
-				TypeAnnotation.bAreIdentified = false;
-			}
-		}
-
-		LastType = BlockAvatar->Block.Type;
-	}
-
-	if (TypeAnnotations.Num() == 0)
-	{
-		// add a 0 annotation
-		FPuzzleRowTypeAnnotation ZeroTypeAnnotation;
-		ZeroTypeAnnotation.Type = EmptyTag;
-		TypeAnnotations.Add(EmptyTag, ZeroTypeAnnotation);
-	}
-
-	// store type annotations on the full annotation
-	TypeAnnotations.GenerateValueArray(Annotation.TypeAnnotations);
-
-	return Annotation;
-}
-
 APuzzleGrid* APuzzlePlayer::CreatePuzzleGrid()
 {
 	FActorSpawnParameters SpawnParameters;
@@ -293,6 +276,20 @@ APuzzleGrid* APuzzlePlayer::CreatePuzzleGrid()
 	return Grid;
 }
 
+void APuzzlePlayer::SetAllBlockAnnotationsVisible(bool bNewVisible)
+{
+	if (PuzzleGrid)
+	{
+		for (APuzzleBlockAvatar* BlockAvatar : PuzzleGrid->GetBlockAvatars())
+		{
+			if (BlockAvatar)
+			{
+				BlockAvatar->SetAnnotationsVisible(bNewVisible);
+			}
+		}
+	}
+}
+
 FRotator APuzzlePlayer::GetPlayerCameraRotation()
 {
 	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
@@ -301,4 +298,80 @@ FRotator APuzzlePlayer::GetPlayerCameraRotation()
 		return PC->PlayerCameraManager->GetCameraRotation();
 	}
 	return FRotator();
+}
+
+void APuzzlePlayer::CheckPuzzleSolved()
+{
+	if (!PuzzleGrid)
+	{
+		return;
+	}
+
+	for (int32 X = 0; X < PuzzleDef.Dimensions.X; ++X)
+	{
+		for (int32 Y = 0; Y < PuzzleDef.Dimensions.Y; ++Y)
+		{
+			for (int32 Z = 0; Z < PuzzleDef.Dimensions.Z; ++Z)
+			{
+				APuzzleBlockAvatar* BlockAvatar = PuzzleGrid->GetBlockAtPosition(FIntVector(X, Y, Z));
+				if (BlockAvatar && !BlockAvatar->IsIdentified())
+				{
+					return;
+				}
+			}
+		}
+	}
+
+	bIsSolved = true;
+
+	SetAllBlockAnnotationsVisible(false);
+
+	// all blocks identified
+	// TODO(bsayre): add other events, setup game mode to change state, etc
+	OnPuzzleSolved_BP();
+}
+
+void APuzzlePlayer::CheckRowSolved(FPuzzleRow Row)
+{
+	Row.Normalize();
+	const bool bIsRowSolved = IsRowIdentified(Row);
+
+	if (bIsRowSolved)
+	{
+		if (PuzzleGrid)
+		{
+			FIntVector Pos = Row.Position;
+			for (int32 Idx = 0; Idx < PuzzleDef.Dimensions[Row.Axis]; ++Idx)
+			{
+				Pos[Row.Axis] = Idx;
+
+				APuzzleBlockAvatar* BlockAvatar = PuzzleGrid->GetBlockAtPosition(Pos);
+				if (BlockAvatar)
+				{
+					BlockAvatar->SetState(EPuzzleBlockState::TrueForm);
+				}
+			}
+		}
+
+		OnRowRevealed_BP(Row);
+	}
+}
+
+void APuzzlePlayer::OnBlockIdentified(APuzzleBlockAvatar* BlockAvatar)
+{
+	CheckPuzzleSolved();
+
+	CheckRowSolved(FPuzzleRow(BlockAvatar->Block.Position, 0));
+	CheckRowSolved(FPuzzleRow(BlockAvatar->Block.Position, 1));
+	CheckRowSolved(FPuzzleRow(BlockAvatar->Block.Position, 2));
+
+	if (!bIsSolved)
+	{
+		// TODO(bsayre): Update only changed block annotations
+		RefreshAllBlockAnnotations();
+	}
+}
+
+void APuzzlePlayer::OnRowIdentified(FPuzzleRow Row)
+{
 }

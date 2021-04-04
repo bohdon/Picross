@@ -28,10 +28,10 @@ public:
 	APuzzleGrid();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FPuzzle Puzzle;
+	FPuzzleDef Puzzle;
 
 	UFUNCTION(BlueprintCallable)
-	void SetPuzzle(const FPuzzle& InPuzzle, bool bRegenerateBlocks = true);
+	void SetPuzzle(const FPuzzleDef& InPuzzle, bool bRegenerateBlocks = true);
 
 	/** The type to use when creating empty blocks */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -49,6 +49,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void GenerateBlockAvatars();
+
+	/** Return all block avatars in the grid */
+	const TArray<APuzzleBlockAvatar*>& GetBlockAvatars() const { return BlockAvatars; }
 
 	/** Regenerate all block avatars for this puzzle */
 	UFUNCTION(BlueprintCallable)
@@ -74,7 +77,7 @@ protected:
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
-	APuzzleBlockAvatar* CreateBlockAvatar(const FPuzzleBlock& Block);
+	APuzzleBlockAvatar* CreateBlockAvatar(const FPuzzleBlockDef& Block);
 
 	/** Calculate the relative location to use for a block in the grid */
 	FVector CalculateBlockLocation(FIntVector Position) const;
