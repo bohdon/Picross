@@ -14,7 +14,8 @@ class UPuzzleBlockMeshSet;
 
 
 /**
- * The visual representation of a grid of blocks making up a puzzle
+ * The visual representation of a grid of blocks making up a puzzle.
+ * Provides features for slicing the grid in order to view cross sections.
  */
 UCLASS()
 class PICROSS_API APuzzleGrid : public AActor
@@ -60,6 +61,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DestroyBlockAvatars();
 
+	/**
+	 * Set the current slicing position and axis.
+	 * Negative positions will slice from the back side of the grid.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void SetSlicerPosition(int32 Axis, int32 Position);
+
+	/** Reset the current slicer position */
+	UFUNCTION(BlueprintCallable)
+	void ResetSlicers();
+
 	UFUNCTION(BlueprintPure)
 	APuzzleBlockAvatar* GetBlockAtPosition(const FIntVector& Position) const;
 
@@ -69,6 +81,12 @@ public:
 	FBlockIdentifiedDelegate OnBlockIdentifiedEvent;
 
 protected:
+	UPROPERTY(Transient)
+	int32 SlicerAxis;
+
+	UPROPERTY(Transient)
+	int32 SlicerPosition;
+
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -81,6 +99,12 @@ protected:
 
 	/** Calculate the relative location to use for a block in the grid */
 	FVector CalculateBlockLocation(FIntVector Position) const;
+
+	/** Called when the slicer position or axis has changed, update block visibilities */
+	void OnSlicerChanged();
+
+	/** Return true if a block at a position should be visible given the current slicer position */
+	bool IsBlockVisibleWithSlicing(FIntVector Position);
 
 	void OnBlockStateChanged(EPuzzleBlockState NewState, EPuzzleBlockState OldState,
 	                         APuzzleBlockAvatar* BlockAvatar);

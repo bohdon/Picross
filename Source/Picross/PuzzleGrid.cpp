@@ -115,6 +115,23 @@ void APuzzleGrid::DestroyBlockAvatars()
 	BlocksByPosition.Empty();
 }
 
+void APuzzleGrid::SetSlicerPosition(int32 Axis, int32 Position)
+{
+	SlicerAxis = FMath::Clamp(Axis, 0, 2);
+	const int32 SlicerMaxValue = Puzzle.Dimensions[Axis] - 1;
+	SlicerPosition = FMath::Clamp(Position, -SlicerMaxValue, SlicerMaxValue);
+
+	OnSlicerChanged();
+}
+
+void APuzzleGrid::ResetSlicers()
+{
+	SlicerAxis = 0;
+	SlicerPosition = 0;
+
+	OnSlicerChanged();
+}
+
 APuzzleBlockAvatar* APuzzleGrid::GetBlockAtPosition(const FIntVector& Position) const
 {
 	if (BlocksByPosition.Contains(Position.ToString()))
@@ -153,6 +170,35 @@ FVector APuzzleGrid::CalculateBlockLocation(FIntVector Position) const
 	const FVector CenterOffset = FVector(Puzzle.Dimensions) * BlockSize * 0.5f - BlockSize * 0.5f;
 	const FVector PositionLoc = FVector(Position) * BlockSize;
 	return PositionLoc - CenterOffset;
+}
+
+void APuzzleGrid::OnSlicerChanged()
+{
+	for (APuzzleBlockAvatar* BlockAvatar : BlockAvatars)
+	{
+		check(BlockAvatar);
+
+		const bool bVisible = IsBlockVisibleWithSlicing(BlockAvatar->Block.Position);
+		BlockAvatar->SetIsBlockHidden(!bVisible);
+	}
+}
+
+bool APuzzleGrid::IsBlockVisibleWithSlicing(FIntVector Position)
+{
+	if (SlicerPosition == 0 || SlicerAxis < 0 || SlicerAxis > 2)
+	{
+		// no slicing or invalid axis
+		return true;
+	}
+
+	if (SlicerPosition > 0)
+	{
+		return Position[SlicerAxis] >= SlicerPosition;
+	}
+	else
+	{
+		return Position[SlicerAxis] < Puzzle.Dimensions[SlicerAxis] + SlicerPosition;
+	}
 }
 
 void APuzzleGrid::OnBlockStateChanged(EPuzzleBlockState NewState, EPuzzleBlockState OldState,
