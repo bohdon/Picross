@@ -6,4 +6,5 @@
 
 APicrossPlayerController::APicrossPlayerController()
 {
+	bEnableClickEvents = true;
 }

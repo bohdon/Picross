@@ -10,6 +10,7 @@
 #include "PuzzleGrid.generated.h"
 
 class APuzzleBlockAvatar;
+class APuzzleGridSlicerHandle;
 class UPuzzleBlockMeshSet;
 
 
@@ -48,6 +49,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<APuzzleBlockAvatar> BlockAvatarClass;
 
+	/** The slicer handle class to spawn */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<APuzzleGridSlicerHandle> SlicerHandleClass;
+
+	/** Padding around the outside of the grid for positioning slicer handles */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float SlicerPadding;
+
 	UFUNCTION(BlueprintCallable)
 	void GenerateBlockAvatars();
 
@@ -68,6 +77,13 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetSlicerPosition(int32 Axis, int32 Position);
 
+	/**
+	 * Return true if slicer position can be adjusted for an axis.
+	 * When a slicer position is set, the position cannot be set for another axis.
+	 */
+	UFUNCTION(BlueprintPure)
+	bool CanSetSlicerPositionForAxis(int32 Axis) const;
+
 	/** Reset the current slicer position */
 	UFUNCTION(BlueprintCallable)
 	void ResetSlicers();
@@ -87,9 +103,15 @@ protected:
 	UPROPERTY(Transient)
 	int32 SlicerPosition;
 
+	/** Slicer handles for each axis, front and back */
+	UPROPERTY(Transient)
+	TArray<APuzzleGridSlicerHandle*> SlicerHandles;
+
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	virtual void Tick(float DeltaSeconds) override;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -99,6 +121,11 @@ protected:
 
 	/** Calculate the relative location to use for a block in the grid */
 	FVector CalculateBlockLocation(FIntVector Position) const;
+
+	/** Spawn slicer handles for all axes */
+	void CreateSlicerHandles();
+
+	void OnSlicerHandlePositionChanged(int32 NewPosition, APuzzleGridSlicerHandle* SlicerHandle);
 
 	/** Called when the slicer position or axis has changed, update block visibilities */
 	void OnSlicerChanged();
