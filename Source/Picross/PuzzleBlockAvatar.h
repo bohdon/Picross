@@ -66,7 +66,7 @@ public:
 	 * will be successfully identified.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void Identify(FGameplayTag GuessType);
+	void Identify(FGameplayTag BlockType);
 
 	/** The marked type of the block, if any */
 	UPROPERTY(Transient, BlueprintReadOnly)
@@ -82,7 +82,7 @@ public:
 
 	/** Is the block currently hidden temporarily? */
 	UFUNCTION(BlueprintCallable)
-	void SetIsBlockHidden(bool bNewHidden);
+	void SetIsBlockHidden(bool bNewHidden, bool bAnimate = true);
 
 	/** Return true if the block is Identified or in its TrueForm */
 	UFUNCTION(BlueprintPure)
@@ -103,6 +103,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void UpdateMesh();
 
+	/** Called when the mesh displayed for this block has been updated */
+	UFUNCTION(BlueprintNativeEvent)
+	void OnMeshUpdated();
+
 	/** Called when this block has been incorrectly identified */
 	UFUNCTION(BlueprintNativeEvent)
 	void OnIncorrectIdentify(FGameplayTag GuessedType);
@@ -119,13 +123,18 @@ public:
 	TArray<UObject*> GetAnnotationDisplayObjects(int32 Axis) const;
 
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnBlockShown"))
-	void OnBlockShown_BP();
+	void OnBlockShown_BP(bool bAnimate);
 
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnBlockHidden"))
-	void OnBlockHidden_BP();
+	void OnBlockHidden_BP(bool bAnimate);
 
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnStateChanged"))
 	void OnStateChanged_BP(EPuzzleBlockState NewState, EPuzzleBlockState OldState);
+
+	DECLARE_MULTICAST_DELEGATE_OneParam(FIdentifyAttemptDelegate, FGameplayTag /* BlockType */);
+
+	/** Called when identify has been called for this block with a target type */
+	FIdentifyAttemptDelegate OnIdentifyAttemptEvent;
 
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FStateChangedDelegate, EPuzzleBlockState /* NewState */,
 	                                     EPuzzleBlockState /* OldState */);

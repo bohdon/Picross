@@ -23,4 +23,8 @@ public:
 	/** Get the current puzzle player */
 	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContextObject"))
 	static APuzzlePlayer* GetPuzzlePlayer(const UObject* WorldContextObject);
+
+	/** Get the current puzzle grid */
+	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContextObject"))
+	static APuzzleGrid* GetPuzzleGrid(const UObject* WorldContextObject);
 };

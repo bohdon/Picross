@@ -7,14 +7,12 @@
 #include "PicrossGameModeBase.h"
 #include "PicrossGameSettings.h"
 #include "PuzzleBlockAvatar.h"
+#include "PuzzleGrid.h"
 #include "Kismet/GameplayStatics.h"
 
 
 APuzzlePlayer::APuzzlePlayer()
-	: SmoothInputSpeed(10.f),
-	  RotateSpeed(45.f),
-	  MaxPitchAngle(85.f),
-	  bIsStarted(false)
+	: bIsStarted(false)
 {
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	RootComponent = Root;
@@ -49,18 +47,17 @@ void APuzzlePlayer::Start()
 
 void APuzzlePlayer::SetPuzzleRotation(float Pitch, float Yaw)
 {
-	RotatePitch = FMath::ClampAngle(Pitch, -MaxPitchAngle, MaxPitchAngle);
-	RotateYaw = FRotator::NormalizeAxis(Yaw);
+	PuzzleGrid->SetPuzzleRotation(Pitch, Yaw);
 }
 
 void APuzzlePlayer::AddRotateRightInput(float Value)
 {
-	RotateRightInput += Value;
+	PuzzleGrid->AddRotateRightInput(Value);
 }
 
 void APuzzlePlayer::AddRotateUpInput(float Value)
 {
-	RotateUpInput += Value;
+	PuzzleGrid->AddRotateUpInput(Value);
 }
 
 void APuzzlePlayer::BreakZeroRows()
@@ -117,6 +114,10 @@ void APuzzlePlayer::AutoIdentifyBlocksInRow(FPuzzleRow Row)
 
 void APuzzlePlayer::RefreshAllBlockAnnotations()
 {
+	if (bIsSolved)
+	{
+		return;
+	}
 	for (int32 X = 0; X < PuzzleDef.Dimensions.X; ++X)
 	{
 		for (int32 Y = 0; Y < PuzzleDef.Dimensions.Y; ++Y)
@@ -132,6 +133,7 @@ void APuzzlePlayer::RefreshAllBlockAnnotations()
 				}
 
 				BlockAvatar->SetAnnotations(GetBlockAnnotations(Position));
+				BlockAvatar->SetAnnotationsVisible(true);
 			}
 		}
 	}
@@ -226,41 +228,6 @@ void APuzzlePlayer::BeginPlay()
 	Super::BeginPlay();
 }
 
-void APuzzlePlayer::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	// update smooth input
-	SmoothRotateRightInput = FMath::Lerp(SmoothRotateRightInput, RotateRightInput, SmoothInputSpeed * DeltaSeconds);
-	SmoothRotateUpInput = FMath::Lerp(SmoothRotateUpInput, RotateUpInput, SmoothInputSpeed * DeltaSeconds);
-
-	// consume inputs
-	RotateRightInput = 0.f;
-	RotateUpInput = 0.f;
-
-	// get camera rotation to apply camera-relative clamping and pitch
-	const FRotator CameraRotation = GetPlayerCameraRotation();
-
-	// update rotation
-	if (FMath::Abs(SmoothRotateRightInput) > SMALL_NUMBER ||
-		FMath::Abs(SmoothRotateUpInput) > SMALL_NUMBER)
-	{
-		const float NewYaw = RotateYaw + SmoothRotateRightInput * RotateSpeed * DeltaSeconds;
-		const float NewPitch = RotatePitch + SmoothRotateUpInput * RotateSpeed * DeltaSeconds;
-		SetPuzzleRotation(NewPitch, NewYaw);
-	}
-
-	// apply rotation to puzzle grid
-	if (PuzzleGrid)
-	{
-		// rotations applied relative to camera
-		const FRotator PitchRot = FRotator(RotatePitch, 0.f, 0.f);
-		const FRotator YawRot = FRotator(0.f, RotateYaw, 0.f);
-		const FRotator NewRotation = (FQuat(CameraRotation) * FQuat(PitchRot) * FQuat(YawRot)).Rotator();
-		PuzzleGrid->SetActorRotation(NewRotation);
-	}
-}
-
 APuzzleGrid* APuzzlePlayer::CreatePuzzleGrid()
 {
 	FActorSpawnParameters SpawnParameters;
@@ -271,7 +238,7 @@ APuzzleGrid* APuzzlePlayer::CreatePuzzleGrid()
 	                                                        SpawnParameters);
 	if (Grid)
 	{
-		Grid->OnBlockIdentifiedEvent.AddUObject(this, &APuzzlePlayer::OnBlockIdentified);
+		Grid->OnBlockIdentifyAttemptEvent.AddUObject(this, &APuzzlePlayer::OnBlockIdentifyAttempt);
 	}
 	return Grid;
 }
@@ -288,16 +255,6 @@ void APuzzlePlayer::SetAllBlockAnnotationsVisible(bool bNewVisible)
 			}
 		}
 	}
-}
-
-FRotator APuzzlePlayer::GetPlayerCameraRotation()
-{
-	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
-	if (PC && PC->PlayerCameraManager)
-	{
-		return PC->PlayerCameraManager->GetCameraRotation();
-	}
-	return FRotator();
 }
 
 void APuzzlePlayer::CheckPuzzleSolved()
@@ -354,6 +311,22 @@ void APuzzlePlayer::CheckRowSolved(FPuzzleRow Row)
 		}
 
 		OnRowRevealed_BP(Row);
+	}
+}
+
+void APuzzlePlayer::OnBlockIdentifyAttempt(APuzzleBlockAvatar* BlockAvatar, FGameplayTag BlockType)
+{
+	if (BlockType == BlockAvatar->Block.Type)
+	{
+		if (BlockAvatar->State == EPuzzleBlockState::Unidentified)
+		{
+			BlockAvatar->SetState(EPuzzleBlockState::Identified);
+			OnBlockIdentified(BlockAvatar);
+		}
+	}
+	else
+	{
+		BlockAvatar->OnIncorrectIdentify(BlockType);
 	}
 }
 

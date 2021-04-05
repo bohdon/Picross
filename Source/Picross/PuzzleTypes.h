@@ -162,6 +162,8 @@ public:
 	/** The block definitions making up this puzzle */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FPuzzleBlockDef> Blocks;
+	
+	int32 GetBlockIndexAtPosition(FIntVector Position) const;
 
 	FPuzzleBlockDef GetBlockAtPosition(FIntVector Position) const;
 };

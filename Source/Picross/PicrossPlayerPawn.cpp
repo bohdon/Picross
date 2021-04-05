@@ -3,11 +3,10 @@
 
 #include "PicrossPlayerPawn.h"
 
-
 #include "DrawDebugHelpers.h"
 #include "PicrossGameplayStatics.h"
 #include "PuzzleBlockAvatar.h"
-#include "PuzzlePlayer.h"
+#include "PuzzleGrid.h"
 #include "Kismet/GameplayStatics.h"
 
 TAutoConsoleVariable<bool> CVarDebugInputTraces(
@@ -27,7 +26,7 @@ void APicrossPlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (APuzzlePlayer* PuzzlePlayer = UPicrossGameplayStatics::GetPuzzlePlayer(this))
+	if (APuzzleGrid* PuzzleGrid = UPicrossGameplayStatics::GetPuzzleGrid(this))
 	{
 		APlayerController* PC = GetController<APlayerController>();
 		if (PC && PC->PlayerCameraManager)
@@ -36,7 +35,7 @@ void APicrossPlayerPawn::BeginPlay()
 			FMinimalViewInfo ViewInfo;
 			CalcCamera(0.f, ViewInfo);
 			const FRotator CameraRotation = ViewInfo.Rotation;
-			PuzzlePlayer->SetPuzzleRotation(-CameraRotation.Pitch, -CameraRotation.Yaw);
+			PuzzleGrid->SetPuzzleRotation(-CameraRotation.Pitch, -CameraRotation.Yaw);
 		}
 	}
 }
@@ -64,7 +63,7 @@ void APicrossPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 void APicrossPlayerPawn::IdInputPressed(FGameplayTag BlockType)
 {
 	APuzzleBlockAvatar* BlockAvatar = TraceForBlockAvatarUnderMouse();
-	if (BlockAvatar && !BlockAvatar->IsIdentified())
+	if (BlockAvatar)
 	{
 		BlockAvatar->Identify(BlockType);
 	}
@@ -72,19 +71,19 @@ void APicrossPlayerPawn::IdInputPressed(FGameplayTag BlockType)
 
 void APicrossPlayerPawn::RotatePuzzleRight(float Value)
 {
-	APuzzlePlayer* PuzzlePlayer = UPicrossGameplayStatics::GetPuzzlePlayer(this);
-	if (PuzzlePlayer)
+	APuzzleGrid* PuzzleGrid = UPicrossGameplayStatics::GetPuzzleGrid(this);
+	if (PuzzleGrid)
 	{
-		PuzzlePlayer->AddRotateRightInput(Value);
+		PuzzleGrid->AddRotateRightInput(Value);
 	}
 }
 
 void APicrossPlayerPawn::RotatePuzzleUp(float Value)
 {
-	APuzzlePlayer* PuzzlePlayer = UPicrossGameplayStatics::GetPuzzlePlayer(this);
-	if (PuzzlePlayer)
+	APuzzleGrid* PuzzleGrid = UPicrossGameplayStatics::GetPuzzleGrid(this);
+	if (PuzzleGrid)
 	{
-		PuzzlePlayer->AddRotateUpInput(Value);
+		PuzzleGrid->AddRotateUpInput(Value);
 	}
 }
 

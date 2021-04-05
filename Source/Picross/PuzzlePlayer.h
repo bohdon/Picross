@@ -4,11 +4,13 @@
 
 #include "CoreMinimal.h"
 
-#include "PuzzleGrid.h"
 #include "PuzzleTypes.h"
 #include "GameFramework/Actor.h"
 
 #include "PuzzlePlayer.generated.h"
+
+class APuzzleBlockAvatar;
+class APuzzleGrid;
 
 
 /**
@@ -33,15 +35,6 @@ public:
 	/** The puzzle grid class to use */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<APuzzleGrid> PuzzleGridClass;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float SmoothInputSpeed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float RotateSpeed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float MaxPitchAngle;
 
 	/** Start playing the puzzle */
 	UFUNCTION(BlueprintCallable)
@@ -95,8 +88,6 @@ public:
 
 	virtual void BeginPlay() override;
 
-	virtual void Tick(float DeltaSeconds) override;
-
 	/**
 	 * Called when the true form of all blocks in a row has been revealed.
 	 * Not called for empty rows.
@@ -130,22 +121,9 @@ protected:
 	/** Regenerate all annotations */
 	void RegenerateAllAnnotations();
 
-	float RotateRightInput;
-	float RotateUpInput;
-
-	float SmoothRotateRightInput;
-	float SmoothRotateUpInput;
-
-	/** The current yaw rotation of the puzzle */
-	float RotateYaw;
-	/** The current pitch rotation of the puzzle */
-	float RotatePitch;
-
 	APuzzleGrid* CreatePuzzleGrid();
 
 	void SetAllBlockAnnotationsVisible(bool bNewVisible);
-
-	FRotator GetPlayerCameraRotation();
 
 	/** Check if the puzzle has been solved */
 	void CheckPuzzleSolved();
@@ -154,6 +132,9 @@ protected:
 	 * Check if a row has been solved, and reveal the true form of blocks if so
 	 */
 	void CheckRowSolved(FPuzzleRow Row);
+	
+	/** Called when a block has been identified correctly */
+	void OnBlockIdentifyAttempt(APuzzleBlockAvatar* BlockAvatar, FGameplayTag BlockType);
 
 	/** Called when a block has been identified correctly */
 	void OnBlockIdentified(APuzzleBlockAvatar* BlockAvatar);

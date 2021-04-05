@@ -16,6 +16,18 @@ FString FPuzzleBlockDef::ToString() const
 	return FString::Printf(TEXT("Block(%s, %s)"), *Position.ToString(), *Type.ToString());
 }
 
+int32 FPuzzleDef::GetBlockIndexAtPosition(FIntVector Position) const
+{
+	for (int32 Idx = 0; Idx < Blocks.Num(); ++Idx)
+	{
+		if (Blocks[Idx].Position == Position)
+		{
+			return Idx;
+		}
+	}
+	return INDEX_NONE;
+}
+
 FPuzzleBlockDef FPuzzleDef::GetBlockAtPosition(FIntVector Position) const
 {
 	// slow, but works for now

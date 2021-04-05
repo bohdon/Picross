@@ -29,8 +29,12 @@ class PICROSS_API APuzzleGrid : public AActor
 public:
 	APuzzleGrid();
 
+	/** If true, automatically generate blocks on BeginPlay */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FPuzzleDef Puzzle;
+	bool bGenerateOnBeginPlay;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FPuzzleDef PuzzleDef;
 
 	UFUNCTION(BlueprintCallable)
 	void SetPuzzle(const FPuzzleDef& InPuzzle, bool bRegenerateBlocks = true);
@@ -42,6 +46,10 @@ public:
 	/** If true, generate block avatars for empty blocks */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bGenerateEmptyBlocks;
+
+	/** The default state of blocks when generated */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EPuzzleBlockState DefaultBlockState;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UPuzzleBlockMeshSet* BlockMeshSet;
@@ -56,6 +64,15 @@ public:
 	/** Padding around the outside of the grid for positioning slicer handles */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float SlicerPadding;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float SmoothInputSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float RotateSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float MaxPitchAngle;
 
 	UFUNCTION(BlueprintCallable)
 	void GenerateBlockAvatars();
@@ -88,13 +105,41 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetSlicers();
 
+	/** Increase the slicer position on the axis most aligned with the camera */
+	UFUNCTION(BlueprintCallable)
+	void IncreaseFrontSlicerPosition();
+
+	/** Decrease the slicer position on the axis most aligned with the camera */
+	UFUNCTION(BlueprintCallable)
+	void DecreaseFrontSlicerPosition();
+
+	/** Set the current rotation of the puzzle */
+	UFUNCTION(BlueprintCallable)
+	void SetPuzzleRotation(float Pitch, float Yaw);
+
+	/** Add input to rotate the puzzle right or left */
+	UFUNCTION(BlueprintCallable)
+	void AddRotateRightInput(float Value);
+
+	/** Add input to rotate the puzzle up or down */
+	UFUNCTION(BlueprintCallable)
+	void AddRotateUpInput(float Value);
+
+	UFUNCTION(BlueprintPure)
+	FVector GetBlockSize() const;
+
 	UFUNCTION(BlueprintPure)
 	APuzzleBlockAvatar* GetBlockAtPosition(const FIntVector& Position) const;
 
-	DECLARE_MULTICAST_DELEGATE_OneParam(FBlockIdentifiedDelegate, APuzzleBlockAvatar* /* BlockAvatar */);
+	/** Return the axis and sign that is currently most aligned with the camera */
+	UFUNCTION(BlueprintCallable)
+	void GetCameraAlignedAxis(int32& OutAxis, int32& OutSign) const;
 
-	/** Called when a block in this grid has ben identified */
-	FBlockIdentifiedDelegate OnBlockIdentifiedEvent;
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FBlockIdentifyAttemptDelegate, APuzzleBlockAvatar* /* BlockAvatar */,
+	                                     FGameplayTag /* BlockType */);
+
+	/** Called when an attempt to identify a block has been made */
+	FBlockIdentifyAttemptDelegate OnBlockIdentifyAttemptEvent;
 
 protected:
 	UPROPERTY(Transient)
@@ -107,6 +152,17 @@ protected:
 	UPROPERTY(Transient)
 	TArray<APuzzleGridSlicerHandle*> SlicerHandles;
 
+	float RotateRightInput;
+	float RotateUpInput;
+
+	float SmoothRotateRightInput;
+	float SmoothRotateUpInput;
+
+	/** The current yaw rotation of the puzzle */
+	float RotateYaw;
+	/** The current pitch rotation of the puzzle */
+	float RotatePitch;
+
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -116,6 +172,8 @@ protected:
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
+
+	FRotator GetPlayerCameraRotation() const;
 
 	APuzzleBlockAvatar* CreateBlockAvatar(const FPuzzleBlockDef& Block);
 
@@ -133,8 +191,7 @@ protected:
 	/** Return true if a block at a position should be visible given the current slicer position */
 	bool IsBlockVisibleWithSlicing(FIntVector Position);
 
-	void OnBlockStateChanged(EPuzzleBlockState NewState, EPuzzleBlockState OldState,
-	                         APuzzleBlockAvatar* BlockAvatar);
+	void OnBlockIdentifyAttempt(FGameplayTag BlockType, APuzzleBlockAvatar* BlockAvatar);
 
 protected:
 	/** All block avatars in this grid. */

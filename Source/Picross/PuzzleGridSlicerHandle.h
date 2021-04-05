@@ -50,11 +50,12 @@ public:
 	void SetPrecisePosition(float NewPosition);
 
 	/** The position of the slicer (0..Dimension-1) */
-	UPROPERTY(Transient, BlueprintSetter=SetPosition, BlueprintReadWrite)
+	UPROPERTY(Transient, BlueprintReadOnly)
 	int32 Position;
 
-	UFUNCTION(BlueprintSetter)
-	void SetPosition(int32 NewPosition);
+	/** Set the current Position, handling conversion based on bInvertPosition */
+	UFUNCTION(BlueprintCallable)
+	void SetPosition(int32 NewPosition, bool bTriggerNotifiers = true);
 
 	/** Get the current Position, taking into account bInvertPosition */
 	UFUNCTION(BlueprintPure)
@@ -69,6 +70,9 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	int32 GetMaxPosition() const;
+
+	UFUNCTION(BlueprintPure)
+	bool IsDragging() const { return bIsDragging; }
 
 	virtual void NotifyActorOnClicked(FKey ButtonPressed) override;
 	virtual void NotifyActorOnReleased(FKey ButtonReleased) override;

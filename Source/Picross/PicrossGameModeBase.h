@@ -23,6 +23,13 @@ public:
 	UPROPERTY(Transient, BlueprintReadOnly)
 	TWeakObjectPtr<APuzzlePlayer> PuzzlePlayer;
 
+	/** The currently active puzzle grid */
+	UPROPERTY(Transient, BlueprintReadOnly)
+	TWeakObjectPtr<APuzzleGrid> PuzzleGrid;
+
 	UFUNCTION(BlueprintCallable)
 	APuzzlePlayer* GetPuzzlePlayer() const { return PuzzlePlayer.Get(); }
+
+	UFUNCTION(BlueprintCallable)
+	APuzzleGrid* GetPuzzleGrid() const { return PuzzleGrid.Get(); }
 };

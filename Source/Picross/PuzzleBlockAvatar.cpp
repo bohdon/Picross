@@ -87,22 +87,14 @@ void APuzzleBlockAvatar::SetState(EPuzzleBlockState NewState)
 	}
 }
 
-void APuzzleBlockAvatar::Identify(FGameplayTag GuessType)
+void APuzzleBlockAvatar::Identify(FGameplayTag BlockType)
 {
-	if (GuessType == Block.Type)
-	{
-		if (State == EPuzzleBlockState::Unidentified)
-		{
-			SetState(EPuzzleBlockState::Identified);
-		}
-	}
-	else
-	{
-		OnIncorrectIdentify(GuessType);
-	}
+	// broadcast, usually to a puzzle player, which will either
+	// update this blocks state or notify it of incorrect identify
+	OnIdentifyAttemptEvent.Broadcast(BlockType);
 }
 
-void APuzzleBlockAvatar::SetIsBlockHidden(bool bNewHidden)
+void APuzzleBlockAvatar::SetIsBlockHidden(bool bNewHidden, bool bAnimate)
 {
 	if (bIsBlockHidden != bNewHidden)
 	{
@@ -110,11 +102,11 @@ void APuzzleBlockAvatar::SetIsBlockHidden(bool bNewHidden)
 
 		if (bIsBlockHidden)
 		{
-			OnBlockHidden_BP();
+			OnBlockHidden_BP(bAnimate);
 		}
 		else
 		{
-			OnBlockShown_BP();
+			OnBlockShown_BP(bAnimate);
 		}
 	}
 }
@@ -156,7 +148,13 @@ void APuzzleBlockAvatar::UpdateMesh()
 			                               : Block.Type;
 		UStaticMesh* BlockMesh = BlockMeshSet->Meshes.FindRef(StateType);
 		Mesh->SetStaticMesh(BlockMesh);
+
+		OnMeshUpdated();
 	}
+}
+
+void APuzzleBlockAvatar::OnMeshUpdated_Implementation()
+{
 }
 
 void APuzzleBlockAvatar::OnAnnotationsChanged()

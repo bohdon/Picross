@@ -25,10 +25,10 @@ void APuzzleGridSlicerHandle::SetPrecisePosition(float NewPosition)
 	SetPositionImpl(FMath::RoundToInt(PrecisePosition), true);
 }
 
-void APuzzleGridSlicerHandle::SetPosition(int32 NewPosition)
+void APuzzleGridSlicerHandle::SetPosition(int32 NewPosition, bool bTriggerNotifiers)
 {
+	SetPositionImpl(bInvertPosition ? -NewPosition : NewPosition, bTriggerNotifiers);
 	PrecisePosition = Position;
-	SetPositionImpl(NewPosition, true);
 }
 
 int32 APuzzleGridSlicerHandle::GetPosition() const
@@ -133,11 +133,18 @@ void APuzzleGridSlicerHandle::Tick(float DeltaTime)
 			FVector WorldDirection;
 			if (PC->DeprojectMousePositionToWorld(WorldLocation, WorldDirection))
 			{
+				const FVector CameraVector = PC->PlayerCameraManager->GetCameraRotation().Vector();
+
+				const FVector PlaneNormal = FMath::Abs(CameraVector | GetActorUpVector()) > 0.5f
+					                            ? GetActorUpVector()
+					                            : GetActorRightVector();
+
 				// get closest point on x-axis of this actor
-				const FPlane Plane(GetActorLocation(), GetActorRightVector());
+				const FPlane Plane(GetActorLocation(), PlaneNormal);
 				const FVector Intersect = FMath::RayPlaneIntersection(WorldLocation, WorldDirection, Plane);
 				const FVector LocalLocation = GetActorTransform().InverseTransformPosition(Intersect);
 				const float NewPosition = LocalLocation.X / BlockSize[Axis];
+
 				SetPrecisePosition(NewPosition);
 
 				if (!PC->IsInputKeyDown(EKeys::LeftMouseButton))
